@@ -26,19 +26,19 @@ class FileChangeWatcher
 	# configuration management files, etc., and return a Hash mapping
 	# filename to modification time.
 	def find_files
-	  result = {}
-	  targets = self.find_directories
-	  targets.each do |target|
-	    Find.find target do |f|
-	      next if test ?d, f
-	      next if f =~ /(swp|~|rej|orig)$/ # temporary/patch files
-	      next if f =~ /^\.\/tmp/          # temporary dir, used by isolate
-	      next if f =~ /\/\.?#/            # Emacs autosave/cvs merge files
-	      filename = f.sub(/^\.\//, '')
-	      result[filename] = File.stat(filename).mtime rescue next
-	    end
-	  end
-	  result
+		result = {}
+		targets = self.find_directories
+		targets.each do |target|
+			Find.find target do |f|
+				next if test ?d, f
+				next if f =~ /(swp|~|rej|orig)$/ # temporary/patch files
+				next if f =~ /^\.\/tmp/          # temporary dir, used by isolate
+				next if f =~ /\/\.?#/            # Emacs autosave/cvs merge files
+				filename = f.sub(/^\.\//, '')
+				result[filename] = File.stat(filename).mtime rescue next
+			end
+		end
+		result
   	end
 
   	# Find files that has changed since last time. 
@@ -67,12 +67,12 @@ class FileChangeWatcher
 	# Returns false if no hook handled the event.
 	#
 	def hook name, *args
-	  @hooks[name].any? { |plugin| plugin[self, *args] }
+		@hooks[name].any? { |plugin| plugin[self, *args] }
 	end
 
 	def wait_for_changes
-      hook :waiting
-      Kernel.sleep self.sleep_time until find_updated_files
+		hook :waiting
+		Kernel.sleep self.sleep_time until find_updated_files
     end
 end
 
