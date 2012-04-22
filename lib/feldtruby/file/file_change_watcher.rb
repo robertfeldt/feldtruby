@@ -17,7 +17,7 @@ class FileChangeWatcher
 		specified_directories  = specifiedDirectories.reject { |path| path.starts_with?("-") }
     	self.find_directories  = specified_directories.empty? ? ['.'] : specified_directories
     	self.sleep_time = sleepTime
-    	self.last_mtime = Time.new(0) # Ensure we run first time when started
+    	self.last_mtime = nil # Ensure we run first time when started
     	@hooks = Hash.new { |h,k| h[k] = [] }
     	add_hook :updated, &runWhenFilesUpdated if runWhenFilesUpdated
 	end
@@ -44,12 +44,11 @@ class FileChangeWatcher
   	# Find files that has changed since last time. 
   	# Call updated hook if any found.
   	def find_updated_files files = find_files
-  		#puts "find_updated_files: " + self.find_directories.inspect + ", " + files.length.to_s
-    	updated = files.select { |filename, mtime| self.last_mtime < mtime }
-  		#puts "  updated = " + updated.inspect 
+  		hook :checkingChanges, files
 
-    	# nothing to update or initially run
-    	unless updated.empty? || self.last_mtime.to_i < 0 then
+  		updated = self.last_mtime.nil? ? files : files.select { |filename, mtime| self.last_mtime < mtime }
+
+	 	unless updated.empty? then
       		self.last_mtime = Time.now
       		hook :updated, updated
     	end
