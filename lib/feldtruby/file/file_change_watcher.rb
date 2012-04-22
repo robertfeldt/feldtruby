@@ -15,11 +15,11 @@ class FileChangeWatcher
 
 	def initialize(specifiedDirectories = ["."], sleepTime = 5*60, &runWhenFilesUpdated)
 		specified_directories  = specifiedDirectories.reject { |path| path.starts_with?("-") }
-    	self.find_directories  = specified_directories.empty? ? ['.'] : specified_directories
-    	self.sleep_time = sleepTime
-    	self.last_mtime = nil # Ensure we run first time when started
-    	@hooks = Hash.new { |h,k| h[k] = [] }
-    	add_hook :updated, &runWhenFilesUpdated if runWhenFilesUpdated
+		self.find_directories  = specified_directories.empty? ? ['.'] : specified_directories
+		self.sleep_time = sleepTime
+		self.last_mtime = nil # Ensure we run first time when started
+		@hooks = Hash.new { |h,k| h[k] = [] }
+		add_hook :updated, &runWhenFilesUpdated if runWhenFilesUpdated
 	end
 
 	# Find the files to process, ignoring temporary files, source
@@ -39,19 +39,17 @@ class FileChangeWatcher
 			end
 		end
 		result
-  	end
+	end
 
   	# Find files that has changed since last time. 
   	# Call updated hook if any found.
-  	def find_updated_files files = find_files
-  		hook :checkingChanges, files
-
-  		updated = self.last_mtime.nil? ? files : files.select { |filename, mtime| self.last_mtime < mtime }
-
-	 	unless updated.empty? then
-      		self.last_mtime = Time.now
-      		hook :updated, updated
-    	end
+	def find_updated_files files = find_files
+		hook :checkingChanges, files
+		updated = self.last_mtime.nil? ? files : files.select { |filename, mtime| self.last_mtime < mtime }
+		unless updated.empty? then
+			self.last_mtime = Time.now
+			hook :updated, updated
+		end
 	end
 
 	# Add the supplied block to the available hooks, with the given
@@ -59,7 +57,7 @@ class FileChangeWatcher
 	def add_hook name, &block
 		# New hooks added in front
 		@hooks[name] = [block] + @hooks[name]
-  	end
+	end
 
 	# Call the event hook named +name+, passing in optional args
 	# depending on the hook itself.
@@ -73,7 +71,7 @@ class FileChangeWatcher
 	def wait_for_changes
 		hook :waiting
 		Kernel.sleep self.sleep_time until find_updated_files
-    end
+	end
 end
 
 if __FILE__ == $0
