@@ -11,12 +11,12 @@ end
 
 # Watch for file changes in given paths then call hooks with the updated files.
 class FileChangeWatcher
-	attr_accessor :find_directories, :last_mtime, :sleep_time, :excluded_files
+	attr_accessor :find_directories, :last_mtime, :sleep_time, :exclusions
 
-	def initialize(specifiedDirectories = ["."], sleepTime = 5*60, excludeFiles = [], &runWhenFilesUpdated)
+	def initialize(specifiedDirectories = ["."], sleepTime = 5*60, excludeFilesRegexps = [], &runWhenFilesUpdated)
 		specified_directories  = specifiedDirectories.reject { |path| path.starts_with?("-") }
 		self.find_directories  = specified_directories.empty? ? ['.'] : specified_directories
-		self.excluded_files = excludeFiles
+		self.exclusions = excludeFilesRegexps
 		self.sleep_time = sleepTime
 		self.last_mtime = nil # Ensure we run first time when started
 		@hooks = Hash.new { |h,k| h[k] = [] }
@@ -42,12 +42,16 @@ class FileChangeWatcher
 		result
 	end
 
+	def exclude_matched_files(files, exclusionRegexps)
+		files.reject {|f| exclusionRegexps.any? {|exre| exre.match(f)}}
+	end
+
   	# Find files that has changed since last time. 
   	# Call updated hook if any found.
 	def find_updated_files files = find_files
 		hook :checkingChanges, files
 		updated = self.last_mtime.nil? ? files : files.select { |filename, mtime| self.last_mtime < mtime }
-		updated.reject {|f| self.excluded_files.include?(f)}
+		updated = exclude_matched_files(updated, self.exclusions)
 
 		unless updated.empty? then
 			self.last_mtime = Time.now
