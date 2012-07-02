@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{feldtruby}
-  s.version = "0.1.1"
+  s.version = "0.1.3"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = [%q{Robert Feldt}]
@@ -24,18 +24,30 @@ Gem::Specification.new do |s|
     "README.rdoc",
     "Rakefile",
     "VERSION",
+    "feldtruby.gemspec",
     "lib/feldtruby.rb",
     "lib/feldtruby/array.rb",
     "lib/feldtruby/array/basic_stats.rb",
     "lib/feldtruby/file/file_change_watcher.rb",
+    "lib/feldtruby/float.rb",
+    "lib/feldtruby/optimize.rb",
+    "lib/feldtruby/optimize/max_steps_termination_criterion.rb",
     "lib/feldtruby/optimize/objective.rb",
+    "lib/feldtruby/optimize/optimizer.rb",
+    "lib/feldtruby/optimize/random_search.rb",
+    "lib/feldtruby/optimize/search_space.rb",
+    "lib/feldtruby/optimize/stdout_logging_statistics_collector.rb",
     "lib/feldtruby/string/to_iso.rb",
     "lib/feldtruby/time.rb",
     "lib/feldtruby/visualization/circos.rb",
     "test/helper.rb",
     "test/test_array.rb",
     "test/test_array_basic_stats.rb",
-    "test/test_optimize_objective.rb"
+    "test/test_float.rb",
+    "test/test_optimize_objective.rb",
+    "test/test_optimize_random_search.rb",
+    "test/test_optimize_search_space.rb",
+    "test/test_time.rb"
   ]
   s.homepage = %q{http://github.com/robertfeldt/feldtruby}
   s.licenses = [%q{MIT}]
