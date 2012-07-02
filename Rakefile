@@ -17,8 +17,8 @@ Jeweler::Tasks.new do |gem|
   gem.name = "feldtruby"
   gem.homepage = "http://github.com/robertfeldt/feldtruby"
   gem.license = "MIT"
-  gem.summary = %Q{TODO: one-line summary of your gem}
-  gem.description = %Q{TODO: longer description of your gem}
+  gem.summary = %Q{Robert Feldt's Common Ruby Code lib - collecting the stuff I write again and again}
+  gem.description = %Q{Robert Feldt's Common Ruby Code lib. I will gradually collect the many generally useful Ruby tidbits I have laying around and clean them up into here. Don't want to rewrite these things again and again...}
   gem.email = "robert.feldt@gmail.com"
   gem.authors = ["Robert Feldt"]
   # dependencies defined in Gemfile
@@ -32,12 +32,16 @@ Rake::TestTask.new(:test) do |test|
   test.verbose = true
 end
 
-require 'rcov/rcovtask'
-Rcov::RcovTask.new do |test|
-  test.libs << 'test'
-  test.pattern = 'test/**/test_*.rb'
-  test.verbose = true
-  test.rcov_opts << '--exclude "gems/*"'
+# rcov not supported in Ruby 1.9 so we must select based on version
+if ENV['RUBY_VERSION'] < "1.9"
+  require 'rcov/rcovtask'
+  Rcov::RcovTask.new do |test|
+    test.libs << 'test'
+    test.pattern = 'test/**/test_*.rb'
+    test.verbose = true
+    test.rcov_opts << '--exclude "gems/*"'
+  end
+else
 end
 
 task :default => :test
