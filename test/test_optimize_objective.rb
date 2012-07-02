@@ -27,7 +27,7 @@ class TestSingleObjective < MiniTest::Unit::TestCase
 end
 
 class TwoMinObjectives1 < FeldtRuby::Optimize::Objective
-	def objective_min_small_distance_between(candidate)
+	def objective_min_distance_between(candidate)
 		candidate.distance_between_elements.sum
 	end
 	def objective_min_sum(candidate)
@@ -63,6 +63,7 @@ class TestTwoObjectives < MiniTest::Unit::TestCase
 	end
 	def test_sub_objective_values
 		assert_equal [1,3], @o.sub_objective_values([1,2])
+		assert_equal [3,7], @o.sub_objective_values([1,2,4])
 		assert_equal [4,8], @o.sub_objective_values([1,2,5])
 	end
 	def test_qv_swgr
@@ -72,6 +73,21 @@ class TestTwoObjectives < MiniTest::Unit::TestCase
 		assert_equal 2.0, @o.qv_swgr([0,0])
 	end
 	def test_qv_swgr_complex
-		assert_equal 0.0, @o.qv_swgr([1,2])
+		# Set first values => fitness is always zero
+		assert_equal 0.0, @o.qv_swgr([1,2,3])
+		# Now we come with a worse candidate => still zero
+		assert_equal 0.0, @o.qv_swgr([1,2,5])
+		# But now the previous value is the best candidate we have seen so gets maximum quality value, 2 aspects * 1.0 per aspect
+		assert_equal 2.0, @o.qv_swgr([1,2,3])
+		# The previous worst is still the worst
+		assert_equal 0.0, @o.qv_swgr([1,2,5])
+		# And now some complex ones that are between the prev best and worst
+		assert_equal ((4.0 - 3.0)/(4-2) + (8.0 - 7)/(8-6)), @o.qv_swgr([1,2,4])
+		assert_equal ((4.0 - 3.5)/(4-2) + (8.0 - 7.5)/(8-6)), @o.qv_swgr([1,2,4.5])
+		# Now extend the global best with a new best
+		assert_equal 2.0, @o.qv_swgr([1,2,2]) # new global min = [1, 5] and max the same at [4, 8]
+		# And the in between candidates now have new values based on the new mins
+		assert_equal ((4.0 - 3.0)/(4-1) + (8.0 - 7)/(8-5)), @o.qv_swgr([1,2,4])
+		assert_equal ((4.0 - 3.5)/(4-1) + (8.0 - 7.5)/(8-5)), @o.qv_swgr([1,2,4.5])
 	end
 end

@@ -45,6 +45,11 @@ class FeldtRuby::Optimize::Objective
 		subObjectiveValues.each_with_index.map {|v,i| ratio_for_aspect(i, v)}
 	end
 
+	def protected_division(num, denom)
+		return 0.0 if denom == 0
+		num / denom
+	end
+
 	def ratio_for_aspect(aspectIndex, value)
 		min, max = global_min_values_per_aspect[aspectIndex], global_max_values_per_aspect[aspectIndex]
 		if is_min_aspect?(aspectIndex)
@@ -52,7 +57,7 @@ class FeldtRuby::Optimize::Objective
 		else
 			numerator = value - min
 		end
-		numerator / (max - min)
+		protected_division(numerator.to_f, max - min)
 	end
 
 	def sub_objective_values(candidate)
