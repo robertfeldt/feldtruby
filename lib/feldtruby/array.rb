@@ -16,4 +16,13 @@ class Array
 			self.sum
 		end
 	end
+
+	# Weighted mean of elements
+	def weighted_mean(weights = nil)
+		if weights
+			self.weighted_sum(weights) / weights.sum.to_f
+		else
+			self.mean
+		end
+	end
 end

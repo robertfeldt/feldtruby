@@ -19,22 +19,25 @@ class FeldtRuby::Optimize::Objective
 	end
 
 	# Return a single quality value for the whole objective for a given candidate. 
-	# By default this uses Bentley and Wakefield's sum-of-weighted-global-ratios (SWGR).
+	# By default this uses a variant of Bentley and Wakefield's sum-of-weighted-global-ratios (SWGR)
+	# called mean-of-weighted-global-ratios (MWGR) which always returns a fitness value
+	# in the range (0.0, 1.0) with 1.0 signaling the best fitness seen so far. The scale is adaptive
+	# though so that the best candidate so far always has a fitness value of 1.0.
 	def quality_value(candidate, weights = nil)
-		num_aspects == 1 ? qv_single(candidate) : qv_swgr(candidate, weights)
+		num_aspects == 1 ? qv_single(candidate) : qv_mwgr(candidate, weights)
 	end
 
 	def rank_candidates(candidates, weights = nil)
-		swgr_rank_candidates(candidates, weights)
+		mwgr_rank_candidates(candidates, weights)
 	end
 
-	# Rand candidates from best to worst. NOTE! We do the steps of SWGR separately since we must
+	# Rand candidates from best to worst. NOTE! We do the steps of MWGR separately since we must
 	# update the global mins and maxs before calculating the SWG ratios.
-	def swgr_rank_candidates(candidates, weights = nil)
+	def mwgr_rank_candidates(candidates, weights = nil)
 		sub_qvss = candidates.map {|c| sub_objective_values(c)}
 		sub_qvss.each {|sub_qvs| update_global_mins_and_maxs(sub_qvs)}
 		sub_qvss.each_with_index.map do |sub_qvs, i| 
-			[candidates[i], swgr_ratios(sub_qvs).weighted_sum(weights), sub_qvs]
+			[candidates[i], mwgr_ratios(sub_qvs).weighted_mean(weights), sub_qvs]
 		end.sort_by {|a| -a[1]} # sort by the ratio values
 	end
 
@@ -43,16 +46,13 @@ class FeldtRuby::Optimize::Objective
 		self.send(aspect_methods.first, candidate)
 	end
 
-	# Sum-of-weigthed-global-ratios (SWGR) quality value
-	def qv_swgr(candidate, weights = nil)
-		#sub_qvs = sub_objective_values(candidate)
-		#update_global_mins_and_maxs(sub_qvs)
-		#swgr_ratios(sub_qvs).weighted_sum(weights)
-		swgr_rank_candidates([candidate], weights).first[1]
+	# Mean-of-weigthed-global-ratios (MWGR) quality value
+	def qv_mwgr(candidate, weights = nil)
+		mwgr_rank_candidates([candidate], weights).first[1]
 	end
 
 	# Calculate the SWGR ratios
-	def swgr_ratios(subObjectiveValues)
+	def mwgr_ratios(subObjectiveValues)
 		subObjectiveValues.each_with_index.map {|v,i| ratio_for_aspect(i, v)}
 	end
 

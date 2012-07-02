@@ -4,11 +4,20 @@ require 'feldtruby/optimize/search_space'
 require 'feldtruby/optimize/stdout_logging_statistics_collector'
 require 'feldtruby/optimize/max_steps_termination_criterion'
 
-DefaultOptimizationOptions = {
-	:statisticsCollector => FeldtRuby::Optimize::StdOutLoggingStatisticsCollector,
-	:terminationCriterion => FeldtRuby::Optimize::MaxStepsTerminationCriterion.new(1000),
-	:verbose => true
-}
+module FeldtRuby::Optimize 
+	DefaultOptimizationOptions = {
+		:statisticsCollector => FeldtRuby::Optimize::StdOutLoggingStatisticsCollector,
+		:maxNumSteps => 1000,
+		:terminationCriterionClass => FeldtRuby::Optimize::MaxStepsTerminationCriterion,
+		:verbose => true
+	}
+
+	def self.override_default_options_with(options)
+		o = DefaultOptimizationOptions.clone.update(options)
+		o[:terminationCriterion] = o[:terminationCriterionClass].new(o[:maxNumSteps])
+		o
+	end
+end
 
 # Find an vector of float values that optimizes a given
 # objective.
@@ -17,7 +26,7 @@ class FeldtRuby::Optimize::Optimizer
 
 	def initialize(objective, searchSpace = FeldtRuby::Optimize::DefaultSearchSpace, options = {})
 		@objective, @search_space = objective, searchSpace
-		@options = DefaultOptimizationOptions.update(options)
+		@options = FeldtRuby::Optimize.override_default_options_with(options)
 		@stats = @options[:statisticsCollector].new(self, @options[:verbose])
 		@termination_criterion = @options[:terminationCriterion]
 	end

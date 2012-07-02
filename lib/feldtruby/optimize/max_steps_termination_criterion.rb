@@ -13,7 +13,9 @@ class FeldtRuby::Optimize::TerminationCriterion
 end
 
 class FeldtRuby::Optimize::MaxStepsTerminationCriterion < FeldtRuby::Optimize::TerminationCriterion
-	def initialize(maxSteps)
+	attr_accessor :max_steps
+
+	def initialize(maxSteps = 1000)
 		@max_steps = maxSteps
 	end
 	def terminate?(optimizer)

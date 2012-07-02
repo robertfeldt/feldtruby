@@ -27,7 +27,7 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 		log_print("\n") # to get a fresh line...
 		new_best_msg = "Found new best (#{quality_values_to_str(newQv, newSubQvs)})\n  new = #{newBest.inspect}"
 		if oldBest
-			log("#{new_best_msg},\nsupplants old best (#{quality_values_to_str(oldQv, oldSubQvs)})\n  old = #{oldBest.inspect}")
+			log("#{new_best_msg},\n    supplants old best (#{quality_values_to_str(oldQv, oldSubQvs)})\n  old = #{oldBest.inspect}")
 		else
 			log(new_best_msg)
 		end

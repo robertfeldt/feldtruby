@@ -24,4 +24,16 @@ class TestFeldtRubyArray < MiniTest::Unit::TestCase
 		assert_equal 3, 	[1, 2].weighted_sum([1, 1])
 		assert_equal 22, 	[1, 4].weighted_sum([2, 5])
 	end
+
+	def test_weighted_mean_one_elements
+		assert_equal 1, 	[1].weighted_mean([1])
+		assert_equal 4, 	[4].weighted_mean([2])
+	end
+
+	def test_weighted_mean_two_elements
+		assert_equal 1.5, 		[1, 2].weighted_mean([1, 1])
+		assert_equal 22.0/7, 	[1, 4].weighted_mean([2, 5])
+
+		assert_equal 1.5, 		[1, 2].weighted_mean()
+	end
 end
