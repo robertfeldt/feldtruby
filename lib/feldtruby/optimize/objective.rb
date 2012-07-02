@@ -1,8 +1,6 @@
 # Objective Functions that measure quality of solutions in optimization.
 
-require 'feldtruby'
-
-module FeldtRuby::Optimize; end
+require 'feldtruby/optimize'
 
 # An Objective captures one or more objectives into a single object
 # and supports a large number of ways to utilize basic objective
@@ -21,11 +19,23 @@ class FeldtRuby::Optimize::Objective
 	end
 
 	# Return a single quality value for the whole objective for a given candidate. 
-	# By default this uses Bentley and Wakefield's sum-of-weighted-global-ratios (SWGR) 
-	# if there are multiple aspects/sub-objectives. If this is a single objective we 
-	# just return the value of the objective_X method.
+	# By default this uses Bentley and Wakefield's sum-of-weighted-global-ratios (SWGR).
 	def quality_value(candidate, weights = nil)
 		num_aspects == 1 ? qv_single(candidate) : qv_swgr(candidate, weights)
+	end
+
+	def rank_candidates(candidates, weights = nil)
+		swgr_rank_candidates(candidates, weights)
+	end
+
+	# Rand candidates from best to worst. NOTE! We do the steps of SWGR separately since we must
+	# update the global mins and maxs before calculating the SWG ratios.
+	def swgr_rank_candidates(candidates, weights = nil)
+		sub_qvss = candidates.map {|c| sub_objective_values(c)}
+		sub_qvss.each {|sub_qvs| update_global_mins_and_maxs(sub_qvs)}
+		sub_qvss.each_with_index.map do |sub_qvs, i| 
+			[candidates[i], swgr_ratios(sub_qvs).weighted_sum(weights), sub_qvs]
+		end.sort_by {|a| -a[1]} # sort by the ratio values
 	end
 
 	# Return the quality value assuming this is a single objective.
@@ -35,9 +45,10 @@ class FeldtRuby::Optimize::Objective
 
 	# Sum-of-weigthed-global-ratios (SWGR) quality value
 	def qv_swgr(candidate, weights = nil)
-		sub_qvs = sub_objective_values(candidate)
-		update_global_mins_and_maxs(sub_qvs)
-		swgr_ratios(sub_qvs).weighted_sum(weights)
+		#sub_qvs = sub_objective_values(candidate)
+		#update_global_mins_and_maxs(sub_qvs)
+		#swgr_ratios(sub_qvs).weighted_sum(weights)
+		swgr_rank_candidates([candidate], weights).first[1]
 	end
 
 	# Calculate the SWGR ratios
