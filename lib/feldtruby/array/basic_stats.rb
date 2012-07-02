@@ -19,4 +19,10 @@ class Array
 	def stdev
 		Math.sqrt( self.variance )
 	end
+
+	def root_mean_squared
+		Math.sqrt( self.map {|v| v**2}.sum )
+	end
+
+	def rms; self.root_mean_squared(); end
 end

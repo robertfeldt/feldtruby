@@ -36,3 +36,10 @@ class TestArrayBasicStatsStdev < MiniTest::Unit::TestCase
 		assert_equal 2.0, [2, 4, 4, 4, 5, 5, 7, 9].stdev 
 	end
 end
+
+class TestArrayRMS < MiniTest::Unit::TestCase
+	def test_root_mean_squared
+		assert_equal Math.sqrt(1*1 + 2*2), [1,2].root_mean_squared
+		assert_equal Math.sqrt(10*10 + 243*243), [10, 243].root_mean_squared
+	end
+end
