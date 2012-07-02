@@ -1,6 +1,4 @@
-#require File.dirname(__FILE__) + '/../test_helper'
-require 'minitest/autorun'
-
+require 'helper'
 require 'feldtruby/array/basic_stats'
 
 class TestArrayBasicStatsSum < MiniTest::Unit::TestCase
