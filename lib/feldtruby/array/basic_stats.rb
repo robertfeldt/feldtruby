@@ -10,8 +10,13 @@ class Array
 
 	def average; mean(); end
 
-	def stdev
+	def variance
+		return 0 if self.length == 0
 		avg = self.mean
-		Math.sqrt( self.map {|e| t = (e-avg); t*t}.sum / self.length.to_f )
+		self.map {|e| (e-avg)**2}.sum / self.length.to_f
+	end
+
+	def stdev
+		Math.sqrt( self.variance )
 	end
 end
