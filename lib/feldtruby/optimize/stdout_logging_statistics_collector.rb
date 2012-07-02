@@ -2,10 +2,21 @@ require 'feldtruby/time'
 require 'feldtruby/float'
 
 class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
+	class DummyStream
+		def puts(str); end
+		def print(str); end
+		def flush(); end
+	end
+
 	def initialize(optimizer, verbose = true)
 		@optimizer = optimizer
 		@verbose = verbose
 		@start_time = Time.now # To ensure we have a value even if optimizer forgot calling note_optimization_starts
+		if verbose
+			@outstream = STDOUT
+		else
+			@outstream = DummyStream.new
+		end
 	end
 
 	def note_optimization_starts
@@ -35,17 +46,13 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 	end
 
 	def log(str)
-		if @verbose
-			STDOUT.puts "#{Time.timestamp()} (#{elapsed_time()} s), #{str}"
-			STDOUT.flush
-		end
+		@outstream.puts( "#{Time.timestamp({:short => true})} (%.2fs), #{str}" % elapsed_time() )
+		@outstream.flush
 	end
 
 	def log_print(str)
-		if @verbose
-			STDOUT.print str
-			STDOUT.flush
-		end
+		@outstream.print str
+		@outstream.flush
 	end
 
 	def elapsed_time
