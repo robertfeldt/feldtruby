@@ -21,7 +21,7 @@ class TestDifferentialEvolution < MiniTest::Unit::TestCase
 		@o1 = MinimizeRMS.new
 		@o2 = MinimizeRMSAndSum.new
 
-		@de1 = FeldtRuby::Optimize::DifferentialEvolution.new(@o1, @s2, {:verbose => false})
+		@de1 = FeldtRuby::Optimize::DifferentialEvolution.new(@o1, @s2, {:verbose => false, :maxNumSteps => 1000})
 		@de2 = FeldtRuby::Optimize::DifferentialEvolution.new(@o2, @s4, {:verbose => false, :maxNumSteps => 2134})
 	end
 

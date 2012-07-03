@@ -26,10 +26,23 @@ Watch for file changes in given paths then call hooks with the updated files.
 	rand_int(top)	 					# random integer in range 0...top
 
 ### Optimize
+A simple optimization framework with classes:
+
 * Objective				(single or multi-objective optimization critera)
 * SearchSpace			(capture constraints for optimization values/parameters)
 * RandomSearcher 		(random search for optimal values)
 * DifferentialEvolution	(effective numerical optimization with evolutionary algorithm)
+
+but also support for different type of logging etc. Setting up an optimization can
+be quite involved but there is a simple wrapper method, with good defaults, for
+numerical optimization using DE:
+
+	# Optimizing the Rosenbrock function on [0, 2], see:
+	# 	http://en.wikipedia.org/wiki/Rosenbrock_function
+	require 'feldtruby/optimize'
+	xbest, ybest = FeldtRuby::Optimize.optimize(2, 0, 2) {|x, y|
+		(1 - x)**2 + 100*(y - x*x)**2
+	}
 
 Contributing to feldtruby
 ------------------------- 

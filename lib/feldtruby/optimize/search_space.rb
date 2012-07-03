@@ -22,6 +22,12 @@ class FeldtRuby::Optimize::SearchSpace
 	def self.new_symmetric(numVariables = 2, distanceFromZero = 1)
 		min_values = Array.new(numVariables).map {-distanceFromZero}
 		max_values = Array.new(numVariables).map {distanceFromZero}
+		self.new_from_min_max(numVariables, -distanceFromZero, distanceFromZero)
+	end
+
+	def self.new_from_min_max(numVariables = 2, min = -1, max = 1)
+		min_values = Array.new(numVariables).map {min}
+		max_values = Array.new(numVariables).map {max}
 		self.new(min_values, max_values)
 	end
 

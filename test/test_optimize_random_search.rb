@@ -21,7 +21,7 @@ class TestRandomSearcher < MiniTest::Unit::TestCase
 		@o1 = MinimizeRMS.new
 		@o2 = MinimizeRMSAndSum.new
 
-		@rs1 = FeldtRuby::Optimize::RandomSearcher.new(@o1, @s2, {:verbose => false})
+		@rs1 = FeldtRuby::Optimize::RandomSearcher.new(@o1, @s2, {:verbose => false, :maxNumSteps => 1000})
 		@rs2 = FeldtRuby::Optimize::RandomSearcher.new(@o2, @s4, {:verbose => false, :maxNumSteps => 2187})
 	end
 

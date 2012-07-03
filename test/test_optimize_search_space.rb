@@ -7,6 +7,7 @@ class TestSearchSpace < MiniTest::Unit::TestCase
 		@s3 = FeldtRuby::Optimize::SearchSpace.new([-1, -5, -100], [1, 50, 1000])	
 		@s4 = FeldtRuby::Optimize::SearchSpace.new_symmetric(4, 10)
 	end
+
 	def test_num_variables
 		assert_equal 1, @s1.num_variables
 		assert_equal 2, @s2.num_variables
@@ -31,5 +32,10 @@ class TestSearchSpace < MiniTest::Unit::TestCase
 		assert_gen_candidate_and_is_candidate(@s2)
 		assert_gen_candidate_and_is_candidate(@s3)
 		assert_gen_candidate_and_is_candidate(@s4)
+	end
+
+	def test_new_from_min_max
+		ss = FeldtRuby::Optimize::SearchSpace.new_from_min_max(2, -7, 2)
+		assert_equal 2, ss.num_variables
 	end
 end

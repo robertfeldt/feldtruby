@@ -10,9 +10,6 @@ require 'feldtruby/optimize'
 #   objective_max_qualityAspectName (for an objective/aspect to be minimized).
 # There can be multiple aspects (sub-objectives) for a single objective.
 class FeldtRuby::Optimize::Objective
-	def initialize
-	end
-
 	# Return the number of aspects/sub-objectives of this objective.
 	def num_aspects
 		@num_aspects ||= aspect_methods.length
@@ -114,5 +111,16 @@ class FeldtRuby::Optimize::Objective
 
 	def is_min_aspect_method?(methodNameAsSymbolOrString)
 		methodNameAsSymbolOrString.to_s =~ /^objective_min_([\w_]+)$/
+	end
+end
+
+# Short hand for when the objective function is given as a block.
+class FeldtRuby::Optimize::ObjectiveInBlock < FeldtRuby::Optimize::Objective
+	def initialize(&objFunc)
+		@objective_function = objFunc
+	end
+
+	def objective_min_error_function(candidate)
+		@objective_function.call(*candidate.to_a)
 	end
 end

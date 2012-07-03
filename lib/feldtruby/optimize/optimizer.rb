@@ -8,9 +8,9 @@ require 'feldtruby/math/rand'
 module FeldtRuby::Optimize 
 	DefaultOptimizationOptions = {
 		:statisticsCollector => FeldtRuby::Optimize::StdOutLoggingStatisticsCollector,
-		:maxNumSteps => 1000,
+		:maxNumSteps => 10_000,
 		:terminationCriterionClass => FeldtRuby::Optimize::MaxStepsTerminationCriterion,
-		:verbose => true,
+		:verbose => false,
 		:populationSize => 100,
 	}
 
