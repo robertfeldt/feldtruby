@@ -5,7 +5,7 @@ Robert Feldt's Common Ruby Code lib. I will gradually collect the many generally
 Contents
 --------
 ### Time
-`Time.timestamp()`    	# Get a timestamp string back with the current time
+	Time.timestamp()    				# Get a timestamp string back with the current time
 
 ### Array
 
