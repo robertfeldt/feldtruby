@@ -2,6 +2,8 @@ feldtruby
 =========
 Robert Feldt's Common Ruby Code lib. I will gradually collect the many generally useful Ruby tidbits I have laying around and clean them up into here. Don't want to rewrite these things again and again... So far this collects a number of generally useful additions to the standard Ruby classes/libs and then includes a simple optimization framework (FeldtRuby::Optimize).
 
+email: robert.feldt ((a)) gmail.com
+
 Contents
 --------
 ### Time
