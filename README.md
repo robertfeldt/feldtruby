@@ -1,6 +1,6 @@
 feldtruby
 =========
-Robert Feldt's Common Ruby Code lib. I will gradually collect the many generally useful Ruby tidbits I have laying around and clean them up into here. Don't want to rewrite these things again and again...
+Robert Feldt's Common Ruby Code lib. I will gradually collect the many generally useful Ruby tidbits I have laying around and clean them up into here. Don't want to rewrite these things again and again... So far this collects a number of generally useful additions to the standard Ruby classes/libs and then includes a simple optimization framework (FeldtRuby::Optimize).
 
 Contents
 --------
@@ -15,14 +15,13 @@ Basic calc/statistics: sum, mean, average, stdev, variance, rms, weighted_sum, w
 	[1,2,5].distance_between_elements 	=> [1, 3]
 
 ### Float
-	1.456.round_to_decimals(2) => 1.46 (round to given num of decimals)
+	1.456.round_to_decimals(2) 			=> 1.46 (round to given num of decimals)
 
 ### File
-	File.file_change_watcher # Watches for file changes and has callbacks hooks for when there are changes
+	File.file_change_watcher 			# Watch for file changes and callback to user code
 
 ### Kernel
-
-	rand_int(top)	 # random integer in range 0...top
+	rand_int(top)	 					# random integer in range 0...top
 
 ### Optimize
 * Objective				(single or multi-objective optimization critera)
