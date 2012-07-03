@@ -114,13 +114,24 @@ class FeldtRuby::Optimize::Objective
 	end
 end
 
-# Short hand for when the objective function is given as a block.
-class FeldtRuby::Optimize::ObjectiveInBlock < FeldtRuby::Optimize::Objective
+# Short hand for when the objective function is given as a block that should be minimized.
+class FeldtRuby::Optimize::ObjectiveMinimizeBlock < FeldtRuby::Optimize::Objective
 	def initialize(&objFunc)
 		@objective_function = objFunc
 	end
 
-	def objective_min_error_function(candidate)
+	def objective_min_cost_function(candidate)
+		@objective_function.call(*candidate.to_a)
+	end
+end
+
+# Short hand for when the objective function is given as a block that should be minimized.
+class FeldtRuby::Optimize::ObjectiveMaximizeBlock < FeldtRuby::Optimize::Objective
+	def initialize(&objFunc)
+		@objective_function = objFunc
+	end
+
+	def objective_max_cost_function(candidate)
 		@objective_function.call(*candidate.to_a)
 	end
 end

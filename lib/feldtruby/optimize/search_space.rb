@@ -19,6 +19,19 @@ class FeldtRuby::Optimize::SearchSpace
 		@deltas = @min_values.zip(@max_values).map {|min,max| max-min}
 	end
 
+	# Bound candidate using the min and max values. We randomly generate a new value inside the space
+	# for each element that is outside.
+	def bound(candidate)
+		a = candidate.each_with_index.map do |v, i|
+			in_range_for_position?(v, i) ? v : gen_value_for_position(i)
+		end
+		candidate.class.send(:[], *a)
+	end
+
+	def in_range_for_position?(value, index)
+		(value >= @min_values[index]) && (value <= @max_values[index])
+	end
+
 	def self.new_symmetric(numVariables = 2, distanceFromZero = 1)
 		min_values = Array.new(numVariables).map {-distanceFromZero}
 		max_values = Array.new(numVariables).map {distanceFromZero}

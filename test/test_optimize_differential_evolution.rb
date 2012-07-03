@@ -22,7 +22,7 @@ class TestDifferentialEvolution < MiniTest::Unit::TestCase
 		@o2 = MinimizeRMSAndSum.new
 
 		@de1 = FeldtRuby::Optimize::DifferentialEvolution.new(@o1, @s2, {:verbose => false, :maxNumSteps => 1000})
-		@de2 = FeldtRuby::Optimize::DifferentialEvolution.new(@o2, @s4, {:verbose => false, :maxNumSteps => 2134})
+		@de2 = FeldtRuby::Optimize::DifferentialEvolution.new(@o2, @s4, {:verbose => false, :maxNumSteps => 1234})
 	end
 
 	def test_de_for_small_vector_with_rms
@@ -36,6 +36,6 @@ class TestDifferentialEvolution < MiniTest::Unit::TestCase
 		@de2.optimize()
 		# Very unlikely we get a number over 0.40 (4 elements)...
 		assert @de2.best.sum <= 0.20
-		assert_equal 2134, @de2.num_optimization_steps
+		assert_equal 1234, @de2.num_optimization_steps
 	end
 end

@@ -32,6 +32,9 @@ class FeldtRuby::Optimize::DifferentialEvolution < FeldtRuby::Optimize::Evolutio
 
 		trial_vector = crossover(target_parent_vector, donor_vector)
 
+		# We must bound the trial vector inside the search space
+		trial_vector = search_space.bound(trial_vector)
+
 		# We get [candidate, qualityValue, subQualityValues for each vector
 		bestV, worstV = objective.rank_candidates([target_parent_vector, trial_vector])
 

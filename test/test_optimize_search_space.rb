@@ -38,4 +38,41 @@ class TestSearchSpace < MiniTest::Unit::TestCase
 		ss = FeldtRuby::Optimize::SearchSpace.new_from_min_max(2, -7, 2)
 		assert_equal 2, ss.num_variables
 	end
+
+	def test_bound
+		s1 = FeldtRuby::Optimize::SearchSpace.new([-5, -3], [5, 7])
+		assert_equal [-1, 0], s1.bound([-1, 0])
+
+		l, h = s1.bound([-10, 3.4])
+		assert_equal 3.4, h
+		assert -5 <= l
+		assert 5 >= l
+
+		l, h = s1.bound([6, 2.7])
+		assert_equal 2.7, h
+		assert -5 <= l
+		assert 5 >= l
+
+		l, h = s1.bound([-4.6, 8.4])
+		assert_equal -4.6, l
+		assert -3 <= h
+		assert 7 >= h
+
+		l, h = s1.bound([-4.6, -4.1])
+		assert_equal -4.6, l
+		assert -3 <= h
+		assert 7 >= h
+
+		l, h = s1.bound([-60.2, 11])
+		assert -5 <= l
+		assert 5 >= l
+		assert -3 <= h
+		assert 7 >= h
+	end
+
+	def test_bound_returns_vector_if_supplied_a_vector
+		s1 = FeldtRuby::Optimize::SearchSpace.new([-5, -3], [5, 7])
+		b = s1.bound(Vector[-10, 5])
+		assert Vector, b.class
+	end
 end
