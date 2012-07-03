@@ -19,8 +19,8 @@ Basic calc/statistics: sum, mean, average, stdev, variance, rms, weighted_sum, w
 ### Float
 	1.456.round_to_decimals(2) 			=> 1.46 (round to given num of decimals)
 
-### File
-	File.file_change_watcher 			# Watch for file changes and callback to user code
+### FileChangeWatcher
+Watch for file changes in given paths then call hooks with the updated files.
 
 ### Kernel
 	rand_int(top)	 					# random integer in range 0...top
