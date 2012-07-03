@@ -11,23 +11,4 @@ class Array
 	def swap!(index1, index2)
 		self[index1], self[index2] = self[index2], self[index1]
 	end
-
-	# Weighted sum of elements
-	def weighted_sum(weights = nil)
-		if weights
-			raise "Not same num of weights (#{weights.length}) as num of elements (#{self.length})" if self.length != weights.length
-			self.zip(weights).map {|e,w| e*w}.sum
-		else
-			self.sum
-		end
-	end
-
-	# Weighted mean of elements
-	def weighted_mean(weights = nil)
-		if weights
-			self.weighted_sum(weights) / weights.sum.to_f
-		else
-			self.mean
-		end
-	end
 end

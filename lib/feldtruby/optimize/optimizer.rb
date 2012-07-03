@@ -24,13 +24,17 @@ end
 # Find an vector of float values that optimizes a given
 # objective.
 class FeldtRuby::Optimize::Optimizer
-	attr_reader :objective, :search_space, :best, :best_quality_value, :num_optimization_steps, :termination_criterion
+	attr_reader :objective, :search_space, :best, :best_quality_value, :best_sub_quality_values, :num_optimization_steps, :termination_criterion
 
 	def initialize(objective, searchSpace = FeldtRuby::Optimize::DefaultSearchSpace, options = {})
 		@objective, @search_space = objective, searchSpace
 		@options = FeldtRuby::Optimize.override_default_options_with(options)
-		@stats = @options[:statisticsCollector].new(self, @options[:verbose])
-		@termination_criterion = @options[:terminationCriterion]
+		initialize_options(@options)
+	end
+
+	def initialize_options(options)
+		@stats = options[:statisticsCollector].new(self, options[:verbose])
+		@termination_criterion = options[:terminationCriterion]
 	end
 
 	# Optimize the objective in the given search space. 
@@ -51,6 +55,7 @@ class FeldtRuby::Optimize::Optimizer
 		ensure	
 			@stats.note_termination("!!! - Optimization FINISHED after #{@num_optimization_steps} steps - !!!")
 		end
+		@stats.note_end_of_optimization(self)
 		@best # return the best
 	end
 
@@ -76,7 +81,7 @@ class FeldtRuby::Optimize::Optimizer
 				@best, new_qv_old_best, sub_qv_old_best)
 			@best = new_best
 			@best_quality_value = new_quality_value
-			@best_sub_qvalues = new_sub_qvalues
+			@best_sub_quality_values = new_sub_qvalues
 			true
 		else
 			false
@@ -87,7 +92,7 @@ end
 class FeldtRuby::Optimize::PopulationBasedOptimizer < FeldtRuby::Optimize::Optimizer
 	attr_reader :population
 
-	def initialize(objective, searchSpace = FeldtRuby::Optimize::DefaultSearchSpace, options = {})
+	def initialize_options(options)
 		super
 		initialize_population(@options[:populationSize])
 		initialize_all_indices()
