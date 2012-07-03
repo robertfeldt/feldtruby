@@ -37,10 +37,10 @@ but also support for different type of logging etc. Setting up an optimization c
 be quite involved but there is a simple wrapper method, with good defaults, for
 numerical optimization using DE:
 
-	# Optimizing the Rosenbrock function on [0, 2], see:
+	# Optimizing with the Rosenbrock function on [0, 2], see:
 	# 	http://en.wikipedia.org/wiki/Rosenbrock_function
 	require 'feldtruby/optimize'
-	xbest, ybest = FeldtRuby::Optimize.optimize(2, 0, 2) {|x, y|
+	xbest, ybest = FeldtRuby::Optimize.optimize(0, 2) {|x, y|
 		(1 - x)**2 + 100*(y - x*x)**2
 	}
 

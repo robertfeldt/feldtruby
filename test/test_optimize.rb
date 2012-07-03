@@ -2,7 +2,7 @@ require 'feldtruby/optimize'
 
 class TestOptimize < MiniTest::Unit::TestCase
 	def test_rosenbrock_optimization_as_in_README
-		xbest, ybest = FeldtRuby::Optimize.optimize(2, 0, 2) {|x, y|
+		xbest, ybest = FeldtRuby::Optimize.optimize(0, 2) {|x, y|
 			(1 - x)**2 + 100*(y - x*x)**2
 		}
 		assert_in_delta 1.0, xbest
@@ -15,7 +15,7 @@ class TestOptimize < MiniTest::Unit::TestCase
 
 	def test_himmelsblau_minimization
 		# For details see: http://en.wikipedia.org/wiki/Himmelblau%27s_function
-		xbest, ybest = FeldtRuby::Optimize.minimize(2, -5, 5, {:maxNumSteps => 5000, :verbose => false}) {|x, y|
+		xbest, ybest = FeldtRuby::Optimize.minimize(-5, 5, {:maxNumSteps => 5000, :verbose => false}) {|x, y|
 			(x*x + y - 11)**2 + (x + y*y + - 7)**2
 		}
 
@@ -46,7 +46,7 @@ class TestOptimize < MiniTest::Unit::TestCase
 	def test_himmelsblau_maximization
 		# There is a local maxima that can be found if we search in a smaller box around 0.0.
 		# For details see: http://en.wikipedia.org/wiki/Himmelblau%27s_function
-		xbest, ybest = FeldtRuby::Optimize.maximize(2, -1, 1, {:maxNumSteps => 2000, :verbose => false}) {|x, y|
+		xbest, ybest = FeldtRuby::Optimize.maximize(-1, 1, {:maxNumSteps => 2000, :verbose => false}) {|x, y|
 			(x*x + y - 11)**2 + (x + y*y + - 7)**2
 		}
 		assert_in_delta -0.270845, xbest, 0.1
