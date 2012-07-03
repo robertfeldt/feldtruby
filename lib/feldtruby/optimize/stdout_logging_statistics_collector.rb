@@ -37,7 +37,8 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 	def note_end_of_optimization(optimizer)
 		best_msg = info_about_candidate(optimizer.best, optimizer.best_quality_value, 
 			optimizer.best_sub_quality_values, "best")
-		note("End of optimization", optimizer.class.to_s, best_msg, 
+		note("End of optimization", "Optimizer: #{optimizer.class}", 
+			best_msg, 
 			event_summary_to_str(),
 			"Time used = #{Time.human_readable_timestr(elapsed_time)}, " + 
 			"Steps performed = #{num_steps}, " + 
