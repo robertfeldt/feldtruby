@@ -36,4 +36,20 @@ class TestFeldtRubyArray < MiniTest::Unit::TestCase
 
 		assert_equal 1.5, 		[1, 2].weighted_mean()
 	end
+
+	def test_swap!
+		a = (0..9).to_a
+
+		a.swap!(0, 8)
+		assert_equal 8, a[0]
+		assert_equal 0, a[8]
+		assert_equal 1, a[1]
+		assert_equal 9, a[9]
+
+		a.swap!(0, 9)
+		assert_equal 9, a[0]
+		assert_equal 0, a[8]
+		assert_equal 8, a[9]
+		assert_equal 2, a[2]
+	end
 end

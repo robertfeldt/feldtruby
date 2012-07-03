@@ -25,4 +25,9 @@ class Array
 			self.mean
 		end
 	end
+
+	# Swap two elements given their indices. Assumes both indices are in range.
+	def swap!(index1, index2)
+		self[index1], self[index2] = self[index2], self[index1]
+	end
 end

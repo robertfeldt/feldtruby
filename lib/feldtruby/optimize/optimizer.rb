@@ -3,13 +3,15 @@ require 'feldtruby/optimize/objective'
 require 'feldtruby/optimize/search_space'
 require 'feldtruby/optimize/stdout_logging_statistics_collector'
 require 'feldtruby/optimize/max_steps_termination_criterion'
+require 'feldtruby/math/rand'
 
 module FeldtRuby::Optimize 
 	DefaultOptimizationOptions = {
 		:statisticsCollector => FeldtRuby::Optimize::StdOutLoggingStatisticsCollector,
 		:maxNumSteps => 1000,
 		:terminationCriterionClass => FeldtRuby::Optimize::MaxStepsTerminationCriterion,
-		:verbose => true
+		:verbose => true,
+		:populationSize => 100,
 	}
 
 	def self.override_default_options_with(options)
@@ -81,3 +83,46 @@ class FeldtRuby::Optimize::Optimizer
 		end
 	end
 end
+
+class FeldtRuby::Optimize::PopulationBasedOptimizer < FeldtRuby::Optimize::Optimizer
+	attr_reader :population
+
+	def initialize(objective, searchSpace = FeldtRuby::Optimize::DefaultSearchSpace, options = {})
+		super
+		initialize_population(@options[:populationSize])
+		initialize_all_indices()
+	end
+
+	# Create a population of a given size by randomly sampling candidates from the search space.
+	def initialize_population(sizeOfPopulation)
+		@population = Array.new(sizeOfPopulation).map {search_space.gen_candidate()}
+	end
+
+	def population_size
+		@population.length
+	end
+
+	def initialize_all_indices
+		# We set up an array of the indices to all candidates of the population so we can later sample from it
+		# This should always contain all indices even if they might be out of order. This is because we
+		# only swap! elements in this array, never delete any.
+		@all_indices = (0...population_size).to_a
+	end
+
+	# Sample indices from the population without replacement.
+	def sample_population_indices_without_replacement(numSamples)
+		sampled_indices = []
+		numSamples.times do |i|
+			index = i + rand_int(population_size - i)
+			sampled_index, skip = @all_indices.swap!(i, index)
+			sampled_indices << sampled_index
+		end
+		sampled_indices
+	end
+
+	# Get candidates from population at given indices.
+	def candidates_with_indices(indices)
+		indices.map {|i| @population[i]}
+	end
+end
+
