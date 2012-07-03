@@ -40,7 +40,8 @@ class FeldtRuby::Optimize::Objective
 
 	# Return the quality value assuming this is a single objective.
 	def qv_single(candidate)
-		self.send(aspect_methods.first, candidate)
+		self.send(aspect_methods.first, 
+			map_candidate_vector_to_candidate_to_be_evaluated(candidate))
 	end
 
 	# Mean-of-weigthed-global-ratios (MWGR) quality value
@@ -68,7 +69,15 @@ class FeldtRuby::Optimize::Objective
 		protected_division(numerator.to_f, max - min)
 	end
 
-	def sub_objective_values(candidate)
+	# The vectors can be mapped to a more complex candidate object before we call
+	# the sub objectives to calc their quality values. Default is no mapping but subclasses
+	# can override this.
+	def map_candidate_vector_to_candidate_to_be_evaluated(vector)
+		vector
+	end
+
+	def sub_objective_values(candidateVector)
+		candidate = map_candidate_vector_to_candidate_to_be_evaluated(candidateVector)
 		aspect_methods.map {|omethod| self.send(omethod, candidate)}
 	end
 
