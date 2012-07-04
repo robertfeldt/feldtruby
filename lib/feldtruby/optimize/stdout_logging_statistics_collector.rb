@@ -80,11 +80,13 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 	end
 
 	def info_about_candidate(candidate, qualityValue, subQualityValues, nameString = "new")
-		"#{quality_values_to_str(qualityValue, subQualityValues)}\n  #{nameString} = #{candidate.inspect}"
+		info_str = "#{quality_values_to_str(qualityValue, subQualityValues)}"
+		info_str += "\n  #{nameString} = #{candidate.inspect}" if nameString
+		info_str
 	end
 
 	def note_new_better(betterMsg, newBetter, newQv, newSubQvs)
-		new_better_msg = info_about_candidate(newBetter, newQv, newSubQvs, "better")
+		new_better_msg = info_about_candidate(newBetter, newQv, newSubQvs, nil)
 		anote(betterMsg, new_better_msg)
 	end
 
