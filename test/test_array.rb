@@ -48,5 +48,9 @@ describe "Array extensions" do
 			[1.5, 0.5, 2.3].ranks.must_equal [2, 3, 1]
 			[1, 7, 15, 0].ranks.must_equal [3, 2, 1, 4]
 		end
+
+		it "works when given an empty array" do
+			[].ranks.must_equal []
+		end
 	end
 end
