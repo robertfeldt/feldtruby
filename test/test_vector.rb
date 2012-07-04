@@ -59,3 +59,40 @@ class TestVectorBasicStats < MiniTest::Unit::TestCase
 		assert_equal 1.5, 		Vector[1, 2].weighted_mean()
 	end
 end
+
+describe Vector do
+	describe "Slicing a vector" do
+		before do
+			@v = Vector[1,2,3,4,5] 
+		end
+
+		it "does not mess up normal indexing" do
+			@v[0].must_equal 1
+			@v[1].must_equal 2
+			@v[2].must_equal 3
+			@v[3].must_equal 4
+			@v[4].must_equal 5
+		end
+
+		it "works in the middle of a vector" do
+			@v[1,1].must_equal Vector[2]
+			@v[1,2].must_equal Vector[2,3]
+			@v[2,3].must_equal Vector[3,4,5]
+		end
+
+		it "works at the start of a vector" do
+			@v[0,1].must_equal Vector[1]
+			@v[0,2].must_equal Vector[1,2]
+			@v[0,5].must_equal Vector[1,2,3,4,5]
+		end
+
+		it "works at the end of a vector" do
+			@v[4,1].must_equal Vector[5]
+		end
+
+		it "works even if goes past the vector" do
+			@v[4,2].must_equal Vector[5]
+			@v[4,10].must_equal Vector[5]
+		end
+	end
+end
