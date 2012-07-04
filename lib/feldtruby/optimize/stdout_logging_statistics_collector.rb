@@ -88,9 +88,16 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 		anote(betterMsg, new_better_msg)
 	end
 
+	def percent_better(a, b)
+		100.0 * (a - b) / b.to_f
+	end
+
 	def note_new_best(newBest, newQv, newSubQvs, oldBest = nil, oldQv = nil, oldSubQvs = nil)
 		new_best_msg = info_about_candidate(newBest, newQv, newSubQvs, "new")
-		new_best_msg += ",\n    supplants old best (#{quality_values_to_str(oldQv, oldSubQvs)})\n  old = #{oldBest.inspect}" if oldBest
+		if oldBest
+			new_best_msg = (("Improvement = %.2f" % percent_better(newQv, oldQv)) + "%\n  ") + new_best_msg
+			new_best_msg += ",\n  supplants old best (#{quality_values_to_str(oldQv, oldSubQvs)})\n  old = #{oldBest.inspect}"
+		end
 		anote("Found new best", new_best_msg)
 	end
 
@@ -109,7 +116,7 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 
 	def log(str, newlineBefore = false, newlineAfter = true)
 		@outstream.puts "" if newlineBefore
-		@outstream.print( "#{Time.timestamp({:short => true})} #{num_steps}: (%.2fs), #{str}" % elapsed_time() )
+		@outstream.print "#{Time.timestamp({:short => true})} #{num_steps}: (#{Time.human_readable_timestr(elapsed_time)}), #{str}"
 		@outstream.puts "" if newlineAfter
 		@outstream.flush
 	end
