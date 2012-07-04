@@ -13,6 +13,7 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 		@verbose = verbose
 		@start_time = Time.now # To ensure we have a value even if optimizer forgot calling note_optimization_starts
 		@events = Hash.new(0)
+		@last_report_time = Hash.new(Time.new("1970-01-01")) # Maps event strings to the last time they were reported on, used by anote.
 		if verbose
 			@outstream = STDOUT
 		else
@@ -24,14 +25,30 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 		@start_time = Time.now
 	end
 
-	def note(msg, *values)
+	def internal_note(shouldPrint, msg, values)
 		@events[msg] += 1
 		if (values.all? {|e| String === e})
 			vstr = values.join("\n  ")
 		else
 			vstr = values.inspect
 		end
-		log "#{event_stat_in_relation_to_step(@events[msg])}: #{msg}\n  #{vstr}", true
+		log( "#{event_stat_in_relation_to_step(@events[msg])}: #{msg}\n  #{vstr}", true ) if shouldPrint
+	end
+
+	def note(msg, *values)
+		internal_note true, msg, values
+	end
+
+	# Adaptive notes are recorded as any (normal) notes but is only reported to the user in a readable
+	# manner i.e. the frequency of reporting them is limited to every 2 seconds.
+	def anote(msg, *values)
+		should_print = elapsed_since_last_reporting_of(msg) > 2.0
+		@last_report_time[msg] = Time.now if should_print
+		internal_note should_print, msg, values
+	end
+
+	def elapsed_since_last_reporting_of(msg)
+		Time.now - @last_report_time[msg]
 	end
 
 	def note_end_of_optimization(optimizer)
@@ -59,13 +76,13 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 
 	def note_new_better(betterMsg, newBetter, newQv, newSubQvs)
 		new_better_msg = info_about_candidate(newBetter, newQv, newSubQvs, "better")
-		note(betterMsg, new_better_msg)
+		anote(betterMsg, new_better_msg)
 	end
 
 	def note_new_best(newBest, newQv, newSubQvs, oldBest = nil, oldQv = nil, oldSubQvs = nil)
 		new_best_msg = info_about_candidate(newBest, newQv, newSubQvs, "new")
 		new_best_msg += ",\n    supplants old best (#{quality_values_to_str(oldQv, oldSubQvs)})\n  old = #{oldBest.inspect}" if oldBest
-		note("Found new best", new_best_msg)
+		anote("Found new best", new_best_msg)
 	end
 
 	def note_another_optimization_step(stepNumber)
@@ -83,7 +100,7 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 
 	def log(str, newlineBefore = false)
 		@outstream.puts "" if newlineBefore
-		@outstream.puts( "#{Time.timestamp({:short => true})} (%.2fs), #{str}" % elapsed_time() )
+		@outstream.puts( "#{Time.timestamp({:short => true})} #{num_steps}: (%.2fs), #{str}" % elapsed_time() )
 		@outstream.flush
 	end
 
