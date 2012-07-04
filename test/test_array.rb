@@ -53,4 +53,18 @@ describe "Array extensions" do
 			[].ranks.must_equal []
 		end
 	end
+
+	describe "ranks_by" do
+		it "works when element to rank by is first and we prepend the ranks" do
+			[[2.5, :a], [1.5, :b], [0.3, :c]].ranks_by(true) {|v| v.first}.must_equal [
+				[1, 2.5, :a], [2, 1.5, :b], [3, 0.3, :c]
+			]
+		end		
+
+		it "works when element to rank by is second and we append the ranks" do
+			[[:a, 2.5], [:c, 0.3], [:b, 1.5]].ranks_by(false) {|v| v[1]}.must_equal [
+				[:a, 2.5, 1], [:c, 0.3, 3], [:b, 1.5, 2]
+			]
+		end		
+	end
 end

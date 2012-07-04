@@ -18,4 +18,17 @@ class Array
 		self.each_with_index.map {|e,i| [i, e]}.sort_by {|v| v.last}.each_with_index.map {|v,i| ranks[v.first]=length-i}
 		ranks
 	end
+
+	# Prepend (or append) ranks after sorting by the value supplied from a block
+	def ranks_by(prependRanks = true, &mapToValueUsedForRanking)
+		res = Array.new(length)
+		sorted_with_indices = self.each_with_index.map {|e,i| [i, e]}.sort_by {|v| mapToValueUsedForRanking.call(v.last)}
+		sorted_with_indices.each_with_index.map do |v,index|
+			orig_index, orig_element = v
+			rank = length - index
+			new_element = prependRanks ? ([rank] + orig_element) : (orig_element + [rank])
+			res[orig_index] = new_element
+		end
+		res
+	end
 end
