@@ -26,6 +26,10 @@ module BasicStatistics
 
 	def rms; self.root_mean_square(); end
 
+	def rms_from_scalar(scalar)
+		Math.sqrt( self.map {|v| (v-scalar)**2}.mean )		
+	end
+
 	# Weighted sum of elements
 	def weighted_sum(weights = nil)
 		if weights

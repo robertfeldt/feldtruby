@@ -59,3 +59,17 @@ class TestArrayBasicStats < MiniTest::Unit::TestCase
 		assert_equal 1.5, 		[1, 2].weighted_mean()
 	end
 end
+
+describe "Basic statistics" do
+	describe "rms_from_scalar" do
+		it "is the same as rms if scalar is 0.0" do
+			a = [1,2,3,4,5]
+			a.rms_from_scalar(0.0).must_be_within_delta a.rms
+		end
+
+		it "is correct for concrete example" do
+			a = [1,2]
+			a.rms_from_scalar(1.5).must_equal Math.sqrt( (0.5**2 + 0.5**2)/2 )
+		end
+	end
+end
