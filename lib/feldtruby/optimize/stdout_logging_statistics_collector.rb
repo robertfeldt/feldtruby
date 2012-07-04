@@ -105,7 +105,7 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 
 	def note_another_optimization_step(stepNumber)
 		@events['Optimization steps'] += 1 # we note it by hand since we are printing something different than the event name
-		adaptive_note(0.2, '.')
+		adaptive_note(0.1, '.')
 	end
 
 	def quality_values_to_str(qv, subQvs)
