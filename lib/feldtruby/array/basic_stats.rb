@@ -60,6 +60,12 @@ module BasicStatistics
 		self.each {|v| sum += v.abs}
 		sum
 	end
+
+	def sum_squared_error(b)
+		sum = 0.0
+		self.each_with_index {|e,i| d = e-b[i]; sum += d*d}
+		sum
+	end
 end
 
 class Array

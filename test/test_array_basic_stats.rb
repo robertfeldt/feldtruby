@@ -91,4 +91,12 @@ describe "Basic statistics" do
 			a.rms_from_scalar(1.5).must_equal Math.sqrt( (0.5**2 + 0.5**2)/2 )
 		end
 	end
+
+	describe "squared_error" do
+		it "works for simple example" do
+			a = [1, 2, 3]
+			b = [2, 4, 7]
+			a.sum_squared_error(b).must_equal (1*1 + 2*2 + 4*4)
+		end
+	end
 end
