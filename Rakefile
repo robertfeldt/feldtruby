@@ -56,3 +56,8 @@ Rake::RDocTask.new do |rdoc|
   rdoc.rdoc_files.include('README*')
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
+
+desc "Shorthand for version:bump_patch"
+task :vbp do
+  Rake::Task["version:bump:patch"].invoke
+end
