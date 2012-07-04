@@ -61,6 +61,25 @@ class TestArrayBasicStats < MiniTest::Unit::TestCase
 end
 
 describe "Basic statistics" do
+	describe "sum of abs" do
+		it "works for simple example" do
+			[1, 2, 3, -4, 5, -6].sum_of_abs.must_equal 1+2+3+4+5+6
+		end
+	end
+
+	describe "sum of absolute deviations from value" do
+		it "is same as sum of absolutes if the value is 0.0" do
+			a = [1, 2, 3, -4, 5, -6]
+			expected = a.map {|v| v.abs}.sum
+			a.sum_of_abs_deviations(0.0).must_equal expected
+		end
+
+		it "works for simple example" do
+			a = [1, 2, 3, -4, 5, -6]
+			a.sum_of_abs_deviations(1.0).must_equal 0+1+2+5+4+7
+		end
+	end
+
 	describe "rms_from_scalar" do
 		it "is the same as rms if scalar is 0.0" do
 			a = [1,2,3,4,5]

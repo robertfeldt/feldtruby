@@ -48,6 +48,18 @@ module BasicStatistics
 			self.mean
 		end
 	end
+
+	def sum_of_abs_deviations(fromValue = 0.0)
+		sum = 0.0
+		self.each {|v| sum += (v-fromValue).abs}
+		sum
+	end
+
+	def sum_of_abs
+		sum = 0.0
+		self.each {|v| sum += v.abs}
+		sum
+	end
 end
 
 class Array
