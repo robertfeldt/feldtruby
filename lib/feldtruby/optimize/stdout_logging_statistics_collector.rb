@@ -46,7 +46,7 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 
 	# Adaptive notes are recorded as any (normal) notes but is only reported to the user in a readable
 	# manner i.e. the frequency of reporting them is limited.
-	def adaptive_note(frequency, msg, *values)
+	def adaptive_note(frequency, msg, values = [])
 		should_print = elapsed_since_last_reporting_of(msg) > frequency
 		@last_report_time[msg] = Time.now if should_print
 		internal_note should_print, msg, values
