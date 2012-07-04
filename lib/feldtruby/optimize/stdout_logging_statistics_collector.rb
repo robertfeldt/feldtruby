@@ -32,7 +32,12 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 		else
 			vstr = values.inspect
 		end
-		log( "#{event_stat_in_relation_to_step(@events[msg])}: #{msg}\n  #{vstr}", true ) if shouldPrint
+		if msg == "."
+			# Just a tick so no event stat etc
+			log_print( msg ) if shouldPrint
+		else
+			log( "#{event_stat_in_relation_to_step(@events[msg])}: #{msg}\n  #{vstr}", true ) if shouldPrint
+		end
 	end
 
 	def note(msg, *values)
@@ -40,11 +45,15 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 	end
 
 	# Adaptive notes are recorded as any (normal) notes but is only reported to the user in a readable
-	# manner i.e. the frequency of reporting them is limited to every 2 seconds.
-	def anote(msg, *values)
-		should_print = elapsed_since_last_reporting_of(msg) > 2.0
+	# manner i.e. the frequency of reporting them is limited.
+	def adaptive_note(frequency, msg, *values)
+		should_print = elapsed_since_last_reporting_of(msg) > frequency
 		@last_report_time[msg] = Time.now if should_print
 		internal_note should_print, msg, values
+	end
+
+	def anote(msg, *values)
+		adaptive_note(2.0, msg, values)
 	end
 
 	def elapsed_since_last_reporting_of(msg)
@@ -86,8 +95,8 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 	end
 
 	def note_another_optimization_step(stepNumber)
-		@events['Optimization steps'] += 1
-		log_print(".")
+		@events['Optimization steps'] += 1 # we note it by hand since we are printing something different than the event name
+		adaptive_note(0.2, '.')
 	end
 
 	def quality_values_to_str(qv, subQvs)
@@ -98,9 +107,10 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 		log(message, true)
 	end
 
-	def log(str, newlineBefore = false)
+	def log(str, newlineBefore = false, newlineAfter = true)
 		@outstream.puts "" if newlineBefore
-		@outstream.puts( "#{Time.timestamp({:short => true})} #{num_steps}: (%.2fs), #{str}" % elapsed_time() )
+		@outstream.print( "#{Time.timestamp({:short => true})} #{num_steps}: (%.2fs), #{str}" % elapsed_time() )
+		@outstream.puts "" if newlineAfter
 		@outstream.flush
 	end
 
