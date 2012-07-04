@@ -31,3 +31,22 @@ class TestFeldtRubyArray < MiniTest::Unit::TestCase
 		assert_equal 2, a[2]
 	end
 end
+
+describe "Array extensions" do
+	describe "ranks" do
+		it "works when elements are already in order" do
+			[2.5, 1.5, 0.3].ranks.must_equal [1, 2, 3]
+			[15, 7, 1, 0].ranks.must_equal [1, 2, 3, 4]
+		end
+
+		it "works when elements are in reverse order" do
+			[0.3, 1.5, 2.5].ranks.must_equal [3, 2, 1]
+			[0, 1, 7, 15].ranks.must_equal [4, 3, 2, 1]
+		end
+
+		it "works when elements are out of order" do
+			[1.5, 0.5, 2.3].ranks.must_equal [2, 3, 1]
+			[1, 7, 15, 0].ranks.must_equal [3, 2, 1, 4]
+		end
+	end
+end
