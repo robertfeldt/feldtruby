@@ -1,0 +1,6 @@
+* Add Pareto front calculations and saving by the stats logger and/or in collab with the Objective!? 
+  - In one way it is easier for the Objective to keep track of these things since it already saves the global mins and maxs.
+  - OTOH it may be more logical that the optimizer or the stats object keeps track of this.
+
+* Consider if the quality of the candidate vectors should be be attached to them instead of being handled separately. 
+  - We can add instance vars to any Ruby object with "special tricks"... ;)

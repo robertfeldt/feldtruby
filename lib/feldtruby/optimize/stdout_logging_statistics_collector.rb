@@ -95,7 +95,7 @@ class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
 	def note_new_best(newBest, newQv, newSubQvs, oldBest = nil, oldQv = nil, oldSubQvs = nil)
 		new_best_msg = info_about_candidate(newBest, newQv, newSubQvs, "new")
 		if oldBest
-			new_best_msg = (("Improvement = %.2f" % percent_better(newQv, oldQv)) + "%\n  ") + new_best_msg
+			new_best_msg = (("Improvement = %.3f" % percent_better(newQv, oldQv)) + "%\n  ") + new_best_msg
 			new_best_msg += ",\n  supplants old best (#{quality_values_to_str(oldQv, oldSubQvs)})\n  old = #{oldBest.inspect}"
 		end
 		anote("Found new best", new_best_msg)
