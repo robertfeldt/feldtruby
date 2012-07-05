@@ -40,7 +40,7 @@ class FeldtRuby::Optimize::DifferentialEvolution < FeldtRuby::Optimize::Evolutio
 
 		# Supplant the target vector with the trial vector if better
 		if bestV.first != target_parent_vector
-			@stats.note_new_better("Trial vector was better", *bestV)
+			@logger.note_new_better("Trial vector was better", *bestV)
 			@population[target_parent_index] = bestV.first
 		end
 

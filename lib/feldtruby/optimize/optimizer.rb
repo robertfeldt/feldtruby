@@ -1,13 +1,13 @@
 require 'feldtruby/optimize'
 require 'feldtruby/optimize/objective'
 require 'feldtruby/optimize/search_space'
-require 'feldtruby/optimize/stdout_logging_statistics_collector'
+require 'feldtruby/optimize/stdout_logger'
 require 'feldtruby/optimize/max_steps_termination_criterion'
 require 'feldtruby/math/rand'
 
 module FeldtRuby::Optimize 
 	DefaultOptimizationOptions = {
-		:statisticsCollector => FeldtRuby::Optimize::StdOutLoggingStatisticsCollector,
+		:logger => FeldtRuby::Optimize::StdOutLogger,
 		:maxNumSteps => 10_000,
 		:terminationCriterionClass => FeldtRuby::Optimize::MaxStepsTerminationCriterion,
 		:verbose => false,
@@ -33,7 +33,7 @@ class FeldtRuby::Optimize::Optimizer
 	end
 
 	def initialize_options(options)
-		@stats = options[:statisticsCollector].new(self, options[:verbose])
+		@logger = options[:logger].new(self, options[:verbose])
 		@termination_criterion = options[:terminationCriterion]
 	end
 
@@ -43,19 +43,19 @@ class FeldtRuby::Optimize::Optimizer
 		# Set up a random best since other methods require it
 		update_best([search_space.gen_candidate()])
 		begin
-			@stats.note_optimization_starts()
+			@logger.note_optimization_starts()
 			while !termination_criterion.terminate?(self)
 				new_candidates = optimization_step()
 				@num_optimization_steps += 1
-				@stats.note_another_optimization_step(@num_optimization_steps)
+				@logger.note_another_optimization_step(@num_optimization_steps)
 				update_best(new_candidates)
 			end
 		rescue Exception => e
-			@stats.note_termination("!!! - Optimization FAILED with exception: #{e.message} - !!!" + e.backtrace.join("\n"))
+			@logger.note_termination("!!! - Optimization FAILED with exception: #{e.message} - !!!" + e.backtrace.join("\n"))
 		ensure	
-			@stats.note_termination("!!! - Optimization FINISHED after #{@num_optimization_steps} steps - !!!")
+			@logger.note_termination("!!! - Optimization FINISHED after #{@num_optimization_steps} steps - !!!")
 		end
-		@stats.note_end_of_optimization(self)
+		@logger.note_end_of_optimization(self)
 		@best # return the best
 	end
 
@@ -77,7 +77,7 @@ class FeldtRuby::Optimize::Optimizer
 			if @best
 				old_best, new_qv_old_best, sub_qv_old_best = ranked.select {|a| a.first == @best}.first
 			end
-			@stats.note_new_best(new_best, new_quality_value, new_sub_qvalues, 
+			@logger.note_new_best(new_best, new_quality_value, new_sub_qvalues, 
 				@best, new_qv_old_best, sub_qv_old_best)
 			@best = new_best
 			@best_quality_value = new_quality_value

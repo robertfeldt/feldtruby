@@ -1,7 +1,7 @@
 require 'feldtruby/time'
 require 'feldtruby/float'
 
-class FeldtRuby::Optimize::StdOutLoggingStatisticsCollector
+class FeldtRuby::Optimize::StdOutLogger
 	class DummyStream
 		def puts(str); end
 		def print(str); end

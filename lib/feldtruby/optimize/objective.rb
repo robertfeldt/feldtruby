@@ -14,7 +14,7 @@ require 'feldtruby/optimize'
 # version numbers to indicate the number of times the scale for the calculation
 # of the ratios has been changed.
 class FeldtRuby::Optimize::Objective
-	attr_accessor :current_version
+	attr_accessor :current_version, :logger
 
 	def initialize
 		@current_version = 0 # Will be updated every time the scale changes
@@ -122,12 +122,18 @@ class FeldtRuby::Optimize::Objective
 	def update_global_min_and_max(aspectIndex, value)
 		if value < global_min_values_per_aspect[aspectIndex]
 			inc_version_number
+			log("New global min for objective #{aspect_methods[aspectIndex]}", value)
 			global_min_values_per_aspect[aspectIndex] = value
 		end
 		if value > global_max_values_per_aspect[aspectIndex]
 			inc_version_number
+			log("New global min for objective #{aspect_methods[aspectIndex]}", value)
 			global_max_values_per_aspect[aspectIndex] = value
 		end
+	end
+
+	def log(msg, *values)
+		@logger.anote(msg, *values) if @logger
 	end
 
 	# Global min values for each aspect. Needed for SWGR. Updated every time we see a new
