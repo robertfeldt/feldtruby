@@ -91,3 +91,67 @@ class TestTwoObjectives < MiniTest::Unit::TestCase
 		assert_equal ((4.0 - 3.5)/(4-1) + (8.0 - 7.5)/(8-5))/2, @o.qv_mwgr([1,2,4.5])
 	end
 end
+
+describe "Objective" do
+	before do
+		@o = SingleObjective1.new
+		@o2 = TwoMinObjectives1.new
+		@c = [1,2,3]
+	end
+
+	it "attaches quality value to an evaluated object" do
+		qv = @o.quality_value(@c)
+		@c._quality_value.must_equal qv
+		@c._objective.must_equal @o
+	end
+
+	it "overwrites quality value if evaluated again with another objective" do
+		qv = @o.quality_value(@c)
+		qv2 = @o2.quality_value(@c)
+		@c._quality_value.must_equal qv2
+		@c._objective.must_equal @o2
+	end
+
+	it "is re-evaluated if the objective has changed since original evaluation" do
+		qv = @o2.quality_value(@c)
+		@o2.quality_value([1,2,3,4,5]) # Higher sum so max updated
+		qvnew = @c._quality_value
+		qvnew.wont_equal qv
+	end
+
+	describe "objects that have not been evaluated" do
+		it "has not attached quality values" do
+			c = [1,2,3]
+			c._quality_value.must_equal nil
+		end
+	end
+
+	describe "version numbers" do
+		it "has version number 0 when no evaluation has taken place" do
+			@o.current_version.must_equal 0
+			@o2.current_version.must_equal 0
+		end
+
+		it "never changes the version number for a single objective since ratios are not used" do
+			@o.quality_value([1])
+			@o.current_version.must_equal 0			
+		end
+
+		it "increases the version number each time a quality aspect of a candidate is more extreme than previously seen (when multi-objective)" do
+			@o2.quality_value([1])
+			@o2.current_version.must_equal 4 # Both min and max changed for two objectives => 2*2
+			@o2.quality_value([2])
+			@o2.current_version.must_equal 5 # New max values for sum objective => +1
+			@o2.quality_value([1,2])
+			@o2.current_version.must_equal 7 # New max values for both objectives => +2
+			@o2.quality_value([0])
+			@o2.current_version.must_equal 8 # New min value for sum objective => +1
+			@o2.quality_value([-1])
+			@o2.current_version.must_equal 9 # New min value for sum objective => +1
+			@o2.quality_value([-2])
+			@o2.current_version.must_equal 10 # New min value for sum objective => +1
+			@o2.quality_value([1,2,3])
+			@o2.current_version.must_equal 12 # New max for both objectives => +1
+		end
+	end
+end

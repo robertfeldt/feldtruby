@@ -9,7 +9,21 @@ require 'feldtruby/optimize'
 #   objective_min_qualityAspectName (for an objective/aspect to be minimized), or 
 #   objective_max_qualityAspectName (for an objective/aspect to be minimized).
 # There can be multiple aspects (sub-objectives) for a single objective.
+# This base class uses mean-weighted-global-ratios (MWGR) as the default mechanism
+# for handling multi-objectives i.e. with more than one sub-objective. It has 
+# version numbers to indicate the number of times the scale for the calculation
+# of the ratios has been changed.
 class FeldtRuby::Optimize::Objective
+	attr_accessor :current_version
+
+	def initialize
+		@current_version = 0 # Will be updated every time the scale changes
+	end
+
+	def inc_version_number
+		@current_version += 1
+	end
+
 	# Return the number of aspects/sub-objectives of this objective.
 	def num_aspects
 		@num_aspects ||= aspect_methods.length
@@ -21,7 +35,23 @@ class FeldtRuby::Optimize::Objective
 	# in the range (0.0, 1.0) with 1.0 signaling the best fitness seen so far. The scale is adaptive
 	# though so that the best candidate so far always has a fitness value of 1.0.
 	def quality_value(candidate, weights = nil)
+		return candidate._quality_value_without_check if quality_value_is_up_to_date?(candidate)
 		num_aspects == 1 ? qv_single(candidate) : qv_mwgr(candidate, weights)
+	end
+
+	def quality_value_is_up_to_date?(candidate)
+		candidate._objective == self && candidate._objective_version == current_version
+	end
+
+	def update_quality_value_in_object(object, qv)
+		object._objective = self
+		object._objective_version = current_version
+		object._quality_value_without_check = qv
+	end
+
+	def ensure_updated_quality_value(candidate)
+		return if quality_value_is_up_to_date?(candidate)
+		quality_value(candidate)
 	end
 
 	def rank_candidates(candidates, weights = nil)
@@ -33,15 +63,19 @@ class FeldtRuby::Optimize::Objective
 	def mwgr_rank_candidates(candidates, weights = nil)
 		sub_qvss = candidates.map {|c| sub_objective_values(c)}
 		sub_qvss.each {|sub_qvs| update_global_mins_and_maxs(sub_qvs)}
-		sub_qvss.each_with_index.map do |sub_qvs, i| 
-			[candidates[i], mwgr_ratios(sub_qvs).weighted_mean(weights), sub_qvs]
-		end.sort_by {|a| -a[1]} # sort by the ratio values
+		sub_qvss.each_with_index.map do |sub_qvs, i|
+			qv = mwgr_ratios(sub_qvs).weighted_mean(weights)
+			update_quality_value_in_object(candidates[i], qv)
+			[candidates[i], qv, sub_qvs]
+		end.sort_by {|a| -a[1]} # sort by the ratio values in descending order
 	end
 
 	# Return the quality value assuming this is a single objective.
 	def qv_single(candidate)
-		self.send(aspect_methods.first, 
+		qv = self.send(aspect_methods.first, 
 			map_candidate_vector_to_candidate_to_be_evaluated(candidate))
+		update_quality_value_in_object(candidate, qv)
+		qv
 	end
 
 	# Mean-of-weigthed-global-ratios (MWGR) quality value
@@ -86,8 +120,14 @@ class FeldtRuby::Optimize::Objective
 	end
 
 	def update_global_min_and_max(aspectIndex, value)
-		global_min_values_per_aspect[aspectIndex] = [global_min_values_per_aspect[aspectIndex], value].min
-		global_max_values_per_aspect[aspectIndex] = [global_max_values_per_aspect[aspectIndex], value].max
+		if value < global_min_values_per_aspect[aspectIndex]
+			inc_version_number
+			global_min_values_per_aspect[aspectIndex] = value
+		end
+		if value > global_max_values_per_aspect[aspectIndex]
+			inc_version_number
+			global_max_values_per_aspect[aspectIndex] = value
+		end
 	end
 
 	# Global min values for each aspect. Needed for SWGR. Updated every time we see a new
@@ -123,9 +163,20 @@ class FeldtRuby::Optimize::Objective
 	end
 end
 
+# We add strangely named accessor methods so we can attach the quality values to objects.
+# We use strange names to minimize risk of method name conflicts.
+class Object
+	attr_accessor :_quality_value_without_check, :_objective, :_objective_version
+	def _quality_value
+		@_objective.ensure_updated_quality_value(self) if @_objective
+		@_quality_value_without_check
+	end
+end
+
 # Short hand for when the objective function is given as a block that should be minimized.
 class FeldtRuby::Optimize::ObjectiveMinimizeBlock < FeldtRuby::Optimize::Objective
 	def initialize(&objFunc)
+		super()
 		@objective_function = objFunc
 	end
 
@@ -137,6 +188,7 @@ end
 # Short hand for when the objective function is given as a block that should be minimized.
 class FeldtRuby::Optimize::ObjectiveMaximizeBlock < FeldtRuby::Optimize::Objective
 	def initialize(&objFunc)
+		super()
 		@objective_function = objFunc
 	end
 
