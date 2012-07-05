@@ -123,14 +123,14 @@ class FeldtRuby::Optimize::Objective
 		min = global_min_values_per_aspect[aspectIndex]
 		if value < min
 			inc_version_number
-			log_new_min_max(aspectIndex, value, min, "min")
 			global_min_values_per_aspect[aspectIndex] = value
+			log_new_min_max(aspectIndex, value, min, "min")
 		end
 		max = global_max_values_per_aspect[aspectIndex]
 		if value > max
 			inc_version_number
-			log_new_min_max(aspectIndex, value, max, "max")
 			global_max_values_per_aspect[aspectIndex] = value
+			log_new_min_max(aspectIndex, value, max, "max")
 		end
 	end
 
