@@ -135,9 +135,10 @@ class FeldtRuby::Optimize::Objective
 	end
 
 	def log_new_min_max(index, newValue, oldValue, description)
-		log("New global #{description} for objective #{aspect_methods[index]}",
-			"a %.3f difference" % protected_division(newValue - oldValue, oldValue),
-			"new = #{newValue}, old = #{oldValue}")
+		log("New global #{description} for sub-objective #{aspect_methods[index]}",
+			("a %.3f" % (100.0 * protected_division(newValue - oldValue, oldValue))) + "% difference",
+			"new = #{newValue}, old = #{oldValue}",
+			"objective version = #{current_version}")
 	end
 
 	def log(msg, *values)
