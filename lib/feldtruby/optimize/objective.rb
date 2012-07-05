@@ -1,6 +1,6 @@
-# Objective Functions that measure quality of solutions in optimization.
 
 require 'feldtruby/optimize'
+require 'feldtruby/float'
 
 # An Objective captures one or more objectives into a single object
 # and supports a large number of ways to utilize basic objective
@@ -48,6 +48,68 @@ class FeldtRuby::Optimize::Objective
 		@num_aspects ||= aspect_methods.length
 	end
 
+	# Class for representing multi-objective qualitites...
+	class QualityValue
+		attr_reader :qv, :sub_qvs
+
+		def initialize(qv, subQvs, objective)
+			@qv, @sub_qvs, @objective = qv, subQvs, objective
+			@version = objective.current_version
+		end
+
+		def <=>(other)
+			@qv <=> other.qv
+		end
+
+		# Two quality values are the same if they have the same qv, regardless of their
+		# sub qualities.
+		def ==(other)
+			other = other.qv if QualityValue === other
+			@qv == other
+		end
+
+		def improvement_in_relation_to(other)
+			if QualityValue === other
+				pdiff = @qv.ratio_diff_vs(other.qv)
+				subpdiffs = @sub_qvs.zip(other.sub_qvs).map {|s, os| s.ratio_diff_vs(os)}
+				qinspect(pdiff, subpdiffs, "Difference", "SubQ. differences", true) + ", #{report_on_num_differences(subpdiffs)}"
+			else
+				@qv.improvement_in_relation_to(other)
+			end
+		end
+
+		def report_on_num_differences(subQvRatioDiffs)
+			num_inc = subQvRatioDiffs.select {|v| v > 0}.length
+			num_dec = subQvRatioDiffs.select {|v| v < 0}.length
+			num_same = subQvRatioDiffs.length - num_inc - num_dec
+			"#{num_inc} increased, #{num_dec} decreased, #{num_same} same"
+		end
+
+		def qinspect(qv, subQvs, qvDesc = "Quality", subQvDesc = "SubQualities", subQvsAreRatios = false, qvIsRatio = true)
+			subQvs = subQvs.map {|v| v*100.0} if subQvsAreRatios
+			sqs = subQvs.map do |sqv| 
+				s = (Float === sqv ? sqv.round_to_decimals(4) : sqv).inspect
+				s += "%" if subQvsAreRatios
+				s
+			end.join(", ")
+			if qvIsRatio
+				qstr = ("%.4f" % (100.0 * qv)) + "%"
+			else
+				qstr = "%.4f" % qv
+			end
+			"#{qvDesc}: #{qstr}, #{subQvDesc}: [#{sqs}]"
+		end
+
+		def inspect
+			qinspect(@qv, @sub_qvs) + ", Obj. version: #{@version}"
+		end
+
+		# Refer all other methods to the main quality value
+		def method_missing(meth, *args, &block)
+			@qv.send(meth, *args, &block)
+      	end
+	end
+
 	# Return a single quality value for the whole objective for a given candidate. 
 	# By default this uses a variant of Bentley and Wakefield's sum-of-weighted-global-ratios (SWGR)
 	# called mean-of-weighted-global-ratios (MWGR) which always returns a fitness value
@@ -84,6 +146,7 @@ class FeldtRuby::Optimize::Objective
 		sub_qvss.zip(candidates).each {|sub_qvs, c| update_global_mins_and_maxs(sub_qvs, c)}
 		sub_qvss.each_with_index.map do |sub_qvs, i|
 			qv = mwgr_ratios(sub_qvs).weighted_mean(weights)
+			qv = QualityValue.new(qv, sub_qvs, self)
 			update_quality_value_in_object(candidates[i], qv)
 			[candidates[i], qv, sub_qvs]
 		end.sort_by {|a| -a[1]} # sort by the ratio values in descending order
@@ -117,11 +180,6 @@ class FeldtRuby::Optimize::Objective
 		subObjectiveValues.each_with_index.map {|v,i| ratio_for_aspect(i, v)}
 	end
 
-	def protected_division(num, denom)
-		return 0.0 if denom == 0
-		num / denom
-	end
-
 	def ratio_for_aspect(aspectIndex, value)
 		min, max = global_min_values_per_aspect[aspectIndex], global_max_values_per_aspect[aspectIndex]
 		if is_min_aspect?(aspectIndex)
@@ -129,7 +187,7 @@ class FeldtRuby::Optimize::Objective
 		else
 			numerator = value - min
 		end
-		protected_division(numerator.to_f, max - min)
+		numerator.to_f.protected_division_with(max - min)
 	end
 
 	# The vectors can be mapped to a more complex candidate object before we call
@@ -165,7 +223,7 @@ class FeldtRuby::Optimize::Objective
 
 	def log_new_min_max(index, newValue, oldValue, description)
 		log("New global #{description} for sub-objective #{aspect_methods[index]}",
-			("a %.3f" % (100.0 * protected_division(newValue - oldValue, oldValue))) + "% difference",
+			("a %.3f" % (100.0 * (newValue - oldValue).protected_division_with(oldValue))) + "% difference",
 			"new = #{newValue}, old = #{oldValue}",
 			"scale is now [#{global_min_values_per_aspect[index]}, #{global_max_values_per_aspect[index]}]",
 			"objective version = #{current_version}")

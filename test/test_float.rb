@@ -7,3 +7,14 @@ class TestFloat < MiniTest::Unit::TestCase
 		assert_equal 1.204, 1.204.round_to_decimals(3)
 	end
 end
+
+describe "protected_division_with" do
+	it "works for non-zero values" do
+		1.0.protected_division_with(2).must_equal 0.5
+		120.4.protected_division_with(4).must_equal 30.1
+	end
+
+	it "returns positive infinity if numerator is positive and denominator is zero" do
+		1.0.protected_division_with(0).must_equal 0.0
+	end
+end

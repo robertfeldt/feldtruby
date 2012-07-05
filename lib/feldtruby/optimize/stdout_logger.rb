@@ -80,10 +80,8 @@ class FeldtRuby::Optimize::StdOutLogger
 	end
 
 	def info_about_candidate(candidate, qualityValue, subQualityValues, nameString = "new")
-		#info_str = candidate._quality_value.inspect
-		info_str = "#{quality_values_to_str(qualityValue, subQualityValues)}"
-		info_str += "\n  #{nameString} = #{candidate.inspect}" if nameString
-		info_str
+		info_str = nameString ? "#{nameString} = #{candidate.inspect}\n  " : "  "
+		info_str + candidate._quality_value.inspect
 	end
 
 	def note_new_better(betterMsg, newBetter, newQv, newSubQvs)
@@ -91,15 +89,11 @@ class FeldtRuby::Optimize::StdOutLogger
 		anote(betterMsg, new_better_msg)
 	end
 
-	def percent_better(a, b)
-		100.0 * (a - b) / b.to_f
-	end
-
 	def note_new_best(newBest, newQv, newSubQvs, oldBest = nil, oldQv = nil, oldSubQvs = nil)
 		new_best_msg = info_about_candidate(newBest, newQv, newSubQvs, "new")
 		if oldBest
-			new_best_msg = (("Improvement = %.3f" % percent_better(newQv, oldQv)) + "%\n  ") + new_best_msg
-			new_best_msg += ",\n  supplants old best (#{quality_values_to_str(oldQv, oldSubQvs)})\n  old = #{oldBest.inspect}"
+			new_best_msg += ",\n  supplants old best\n  #{oldQv.inspect}"
+			new_best_msg += "\n  #{newQv.improvement_in_relation_to(oldQv)}\n"
 		end
 		anote("Found new best", new_best_msg)
 	end
