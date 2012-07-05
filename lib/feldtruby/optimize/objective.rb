@@ -10,14 +10,33 @@ require 'feldtruby/optimize'
 #   objective_max_qualityAspectName (for an objective/aspect to be minimized).
 # There can be multiple aspects (sub-objectives) for a single objective.
 # This base class uses mean-weighted-global-ratios (MWGR) as the default mechanism
-# for handling multi-objectives i.e. with more than one sub-objective. It has 
-# version numbers to indicate the number of times the scale for the calculation
-# of the ratios has been changed.
+# for handling multi-objectives i.e. with more than one sub-objective. 
+# An objective has version numbers to indicate the number of times the scale 
+# for the calculation of the ratios has been changed.
 class FeldtRuby::Optimize::Objective
 	attr_accessor :current_version, :logger
 
 	def initialize
-		@current_version = 0 # Will be updated every time the scale changes
+		@current_version = 0
+		@pareto_front = Array.new(num_aspects)
+	end
+
+	def reset_quality_scale(candidate, aspectIndex, typeOfReset)
+		if (typeOfReset == :min && is_min_aspect?(aspectIndex)) || 
+		   (typeOfReset == :max && !is_min_aspect?(aspectIndex))
+			@pareto_front[aspectIndex] = candidate
+		end
+
+		# Reset the best object since we have a new scale
+		@best_candidate = nil
+		@best_qv = nil
+
+		inc_version_number
+	end
+
+	def update_best_candidate(candidate)
+		@best_candidate = candidate
+		@best_qv = candidate._quality_value
 	end
 
 	def inc_version_number
@@ -62,12 +81,22 @@ class FeldtRuby::Optimize::Objective
 	# update the global mins and maxs before calculating the SWG ratios.
 	def mwgr_rank_candidates(candidates, weights = nil)
 		sub_qvss = candidates.map {|c| sub_objective_values(c)}
-		sub_qvss.each {|sub_qvs| update_global_mins_and_maxs(sub_qvs)}
+		sub_qvss.zip(candidates).each {|sub_qvs, c| update_global_mins_and_maxs(sub_qvs, c)}
 		sub_qvss.each_with_index.map do |sub_qvs, i|
 			qv = mwgr_ratios(sub_qvs).weighted_mean(weights)
 			update_quality_value_in_object(candidates[i], qv)
 			[candidates[i], qv, sub_qvs]
 		end.sort_by {|a| -a[1]} # sort by the ratio values in descending order
+	end
+
+	def note_end_of_optimization(optimizer)
+		log("Objective reporting the Pareto front", info_pareto_front())
+	end
+
+	def info_pareto_front
+		@pareto_front.each_with_index.map do |c, i|
+			"Pareto front candidate for objective #{aspect_methods[i]}: #{map_candidate_vector_to_candidate_to_be_evaluated(c).inspect}"
+		end.join("\n")
 	end
 
 	# Return the quality value assuming this is a single objective.
@@ -115,20 +144,20 @@ class FeldtRuby::Optimize::Objective
 		aspect_methods.map {|omethod| self.send(omethod, candidate)}
 	end
 
-	def update_global_mins_and_maxs(aspectValues)
-		aspectValues.each_with_index {|v, i| update_global_min_and_max(i, v)}
+	def update_global_mins_and_maxs(aspectValues, candidate = nil)
+		aspectValues.each_with_index {|v, i| update_global_min_and_max(i, v, candidate)}
 	end
 
-	def update_global_min_and_max(aspectIndex, value)
+	def update_global_min_and_max(aspectIndex, value, candidate)
 		min = global_min_values_per_aspect[aspectIndex]
 		if value < min
-			inc_version_number
+			reset_quality_scale(candidate, aspectIndex, :min)
 			global_min_values_per_aspect[aspectIndex] = value
 			log_new_min_max(aspectIndex, value, min, "min")
 		end
 		max = global_max_values_per_aspect[aspectIndex]
 		if value > max
-			inc_version_number
+			reset_quality_scale(candidate, aspectIndex, :max)
 			global_max_values_per_aspect[aspectIndex] = value
 			log_new_min_max(aspectIndex, value, max, "max")
 		end

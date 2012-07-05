@@ -80,6 +80,7 @@ class FeldtRuby::Optimize::StdOutLogger
 	end
 
 	def info_about_candidate(candidate, qualityValue, subQualityValues, nameString = "new")
+		#info_str = candidate._quality_value.inspect
 		info_str = "#{quality_values_to_str(qualityValue, subQualityValues)}"
 		info_str += "\n  #{nameString} = #{candidate.inspect}" if nameString
 		info_str

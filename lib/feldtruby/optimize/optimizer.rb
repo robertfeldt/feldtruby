@@ -56,6 +56,7 @@ class FeldtRuby::Optimize::Optimizer
 		ensure	
 			@logger.note_termination("!!! - Optimization FINISHED after #{@num_optimization_steps} steps - !!!")
 		end
+		@objective.note_end_of_optimization(self)
 		@logger.note_end_of_optimization(self)
 		@best # return the best
 	end

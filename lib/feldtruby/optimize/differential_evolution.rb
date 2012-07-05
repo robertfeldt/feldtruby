@@ -11,7 +11,7 @@ class FeldtRuby::Optimize::DifferentialEvolution < FeldtRuby::Optimize::Evolutio
 	def initialize_options(options)
 		super
 		@f = @scale_factor = options[:DE_F_ScaleFactor] || 0.8
-		@cr = @crossover_rate = options[:DE_CR_CrossoverRate] || 0.4
+		@cr = @crossover_rate = options[:DE_CR_CrossoverRate] || 0.7
 		@num_parents_to_sample = options[:DE_NumParentsToSample] || 4
 	end
 
