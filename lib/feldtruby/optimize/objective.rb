@@ -138,6 +138,7 @@ class FeldtRuby::Optimize::Objective
 		log("New global #{description} for sub-objective #{aspect_methods[index]}",
 			("a %.3f" % (100.0 * protected_division(newValue - oldValue, oldValue))) + "% difference",
 			"new = #{newValue}, old = #{oldValue}",
+			"scale is now [#{global_min_values_per_aspect[index]}, #{global_max_values_per_aspect[index]}]",
 			"objective version = #{current_version}")
 	end
 
