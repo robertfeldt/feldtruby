@@ -30,6 +30,7 @@ class FeldtRuby::Optimize::Optimizer
 		@objective, @search_space = objective, searchSpace
 		@options = FeldtRuby::Optimize.override_default_options_with(options)
 		initialize_options(@options)
+		@objective.logger = @logger
 	end
 
 	def initialize_options(options)

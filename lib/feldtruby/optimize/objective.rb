@@ -120,16 +120,24 @@ class FeldtRuby::Optimize::Objective
 	end
 
 	def update_global_min_and_max(aspectIndex, value)
-		if value < global_min_values_per_aspect[aspectIndex]
+		min = global_min_values_per_aspect[aspectIndex]
+		if value < min
 			inc_version_number
-			log("New global min for objective #{aspect_methods[aspectIndex]}", value)
+			log_new_min_max(aspectIndex, value, min, "min")
 			global_min_values_per_aspect[aspectIndex] = value
 		end
-		if value > global_max_values_per_aspect[aspectIndex]
+		max = global_max_values_per_aspect[aspectIndex]
+		if value > max
 			inc_version_number
-			log("New global min for objective #{aspect_methods[aspectIndex]}", value)
+			log_new_min_max(aspectIndex, value, max, "max")
 			global_max_values_per_aspect[aspectIndex] = value
 		end
+	end
+
+	def log_new_min_max(index, newValue, oldValue, description)
+		log("New global #{description} for objective #{aspect_methods[index]}",
+			"a %.3f difference" % protected_division(newValue - oldValue, oldValue),
+			"new = #{newValue}, old = #{oldValue}")
 	end
 
 	def log(msg, *values)
