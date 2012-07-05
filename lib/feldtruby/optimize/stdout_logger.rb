@@ -22,6 +22,7 @@ class FeldtRuby::Optimize::StdOutLogger
 	end
 
 	def note_optimization_starts
+		log("Optimization with optimizer #{@optimizer.class.inspect} started")
 		@start_time = Time.now
 	end
 
