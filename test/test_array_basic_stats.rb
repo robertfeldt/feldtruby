@@ -99,4 +99,26 @@ describe "Basic statistics" do
 			a.sum_squared_error(b).must_equal (1*1 + 2*2 + 4*4)
 		end
 	end
+
+	describe "median" do
+		it "works when there is a single value" do
+			[1].median.must_equal 1
+		end
+
+		it "works when there are two integers, median is float" do
+			[1, 2].median.must_equal 1.5
+		end
+
+		it "works when there are two floats, median is float" do
+			[1.0, 2.0].median.must_equal 1.5
+		end
+
+		it "works when there are three inputs" do
+			[1.0, 2.0, 3.0].median.must_equal 2.0
+		end
+
+		it "works when there are four inputs" do
+			[1, 2, 3, 4].median.must_equal 2.5
+		end
+	end
 end

@@ -10,6 +10,16 @@ module BasicStatistics
 
 	def average; mean(); end
 
+	def median
+		sorted = self.sort
+		if self.length % 2 == 0
+			mid = self.length / 2
+			(sorted[mid-1] + sorted[mid])/2.0
+		else
+			sorted[self.length/2.0]
+		end
+	end
+
 	def variance
 		return 0 if self.length == 0
 		avg = self.mean
