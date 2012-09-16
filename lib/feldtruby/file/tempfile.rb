@@ -3,9 +3,9 @@
 # After the block has executed make sure there is no tempfile 
 # with that name, if there is delete it.
 def File.with_tempfile(suffix = ".temp", basename = "temp")
-	tempfilename = File.join(basename, rand(1e7).to_s + suffix)
+	tempfilename = basename + rand(1e7).to_s + suffix
 	while Dir.exist?(tempfilename)
-		tempfilename = File.join(basename, rand(1e7).to_s)
+		tempfilename = basename + rand(1e7).to_s + suffix
 	end
 	begin
 		yield tempfilename
