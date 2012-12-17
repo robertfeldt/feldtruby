@@ -28,6 +28,7 @@ lib/feldtruby/time.rb
 lib/feldtruby/vector.rb
 lib/feldtruby/visualization/circos.rb
 lib/feldtruby/visualization/slopegraph.rb
+lib/feldtruby/word_counter.rb
 test/helper.rb
 test/test_array.rb
 test/test_array_basic_stats.rb
@@ -42,3 +43,4 @@ test/test_optimize_search_space.rb
 test/test_time.rb
 test/test_vector.rb
 test/test_html_doc_getter.rb
+test/test_word_counter.rb
