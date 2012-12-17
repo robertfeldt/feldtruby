@@ -3,8 +3,14 @@ class FeldtRuby::WordCounter
     @counts = Hash.new(0)
   end
 
+  # Ensure it has canonical form
+  def preprocess_word(word)
+    word.strip.downcase
+  end
+
   def count_word(word)
-    @counts[word] += 1 unless is_stop_word?(word)
+    w = preprocess_word(word)
+    @counts[w] += 1 unless is_stop_word?(w)
   end
 
   def count_words(string)
@@ -16,7 +22,7 @@ class FeldtRuby::WordCounter
   end
 
   def count(word)
-    @counts[word]
+    @counts[preprocess_word(word)]
   end
 
   def top_words(numberOfWords)
@@ -27,5 +33,39 @@ class FeldtRuby::WordCounter
   
   def is_stop_word?(word)
     StopWords.include?(word)
+  end
+end
+
+class FeldtRuby::MergingWordCounter < FeldtRuby::WordCounter
+  def merge!
+    words = @counts.keys
+    base_words = words.select {|w| w[-1,1] != "s" && w[-4,4] != "ming" && w[-3,3] != "ing"}
+    non_base = words - base_words
+    ending_in_s = non_base.select {|w| w[-1,1] == "s"}
+    ending_in_ing = non_base.select {|w| w[-3,3] == "ing"}
+    ending_in_ming = non_base.select {|w| w[-4,4] == "ming"}
+    base_words.each do |base_word|
+      merged_word = base_word
+      count = @counts[base_word]
+      if ending_in_s.include?(base_word + "s")
+        count += @counts[base_word + "s"]
+        @counts.delete(base_word + "s")
+        merged_word += "|#{base_word}s"
+      end
+      if ending_in_ming.include?(base_word + "ming")
+        count += @counts[base_word + "ming"]
+        @counts.delete(base_word + "ming")
+        merged_word += "|#{base_word}ming"
+      end
+      if ending_in_ing.include?(base_word + "ing")
+        count += @counts[base_word + "ing"]
+        @counts.delete(base_word + "ing")
+        merged_word += "|#{base_word}ing"
+      end
+      if merged_word != base_word
+        @counts[merged_word] = count
+        @counts.delete(base_word)
+      end
+    end
   end
 end
