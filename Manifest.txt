@@ -39,3 +39,4 @@ test/test_optimize_random_search.rb
 test/test_optimize_search_space.rb
 test/test_time.rb
 test/test_vector.rb
+test/test_html_doc_getter.rb
