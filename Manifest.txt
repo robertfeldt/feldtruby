@@ -8,6 +8,7 @@ TODO
 lib/feldtruby.rb
 lib/feldtruby/array.rb
 lib/feldtruby/array/basic_stats.rb
+lib/feldtruby/array/count_by.rb
 lib/feldtruby/file/file_change_watcher.rb
 lib/feldtruby/file/tempfile.rb
 lib/feldtruby/float.rb
@@ -30,6 +31,7 @@ lib/feldtruby/visualization/slopegraph.rb
 test/helper.rb
 test/test_array.rb
 test/test_array_basic_stats.rb
+test/test_array_count_by.rb
 test/test_float.rb
 test/test_optimize.rb
 test/test_optimize_differential_evolution.rb
