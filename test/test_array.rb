@@ -1,3 +1,4 @@
+require 'minitest/spec'
 require 'feldtruby/array'
 
 class TestFeldtRubyArray < MiniTest::Unit::TestCase
