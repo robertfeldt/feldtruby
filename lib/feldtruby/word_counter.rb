@@ -13,8 +13,12 @@ class FeldtRuby::WordCounter
     @counts[w] += 1 unless is_stop_word?(w)
   end
 
+  def invidual_words_in_string(str)
+    str.downcase.split(/[^\w-]+/)
+  end
+
   def count_words(string)
-    string.downcase.split(/[^\w-]+/).map {|w| count_word(w)}
+    invidual_words_in_string(string).map {|w| count_word(w)}
   end
 
   def words
@@ -34,9 +38,9 @@ class FeldtRuby::WordCounter
   def is_stop_word?(word)
     StopWords.include?(word)
   end
-end
 
-class FeldtRuby::MergingWordCounter < FeldtRuby::WordCounter
+  # Merge words together that are pluralis or -ing (or -ming) forms of each other.
+  # Destructive, so only use this after all words have been added.
   def merge!
     words = @counts.keys
     base_words = words.select {|w| w[-1,1] != "s" && w[-4,4] != "ming" && w[-3,3] != "ing"}
@@ -67,5 +71,30 @@ class FeldtRuby::MergingWordCounter < FeldtRuby::WordCounter
         @counts.delete(base_word)
       end
     end
+  end
+end
+
+class FeldtRuby::NgramWordCounter < FeldtRuby::WordCounter
+  def initialize(n = 2)
+    super()
+    @n = n
+  end
+  def count_words(words)
+    # Split sentences, get words in each sentence, create n-grams, filter n-grams containing stop words, and count remaining
+    words.split(/\.\s+(?=[A-Z]{1})/).each do |sentence|
+      ngrams = all_ngrams(invidual_words_in_string(sentence))
+      non_stop_ngrams = ngrams.select {|ngram| !ngram.any? {|ngw| is_stop_word?(ngw)}}
+      non_stop_ngrams.each {|ngram| count_word(ngram.join(' '))}
+    end
+  end
+  def all_ngrams(array)
+    res = []
+    length = array.length
+    index = 0
+    while (length - index) >= @n
+      res << array[index, @n]
+      index += 1
+    end
+    res
   end
 end
