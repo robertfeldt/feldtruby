@@ -129,12 +129,12 @@ class FeldtRuby::Optimize::PopulationBasedOptimizer < FeldtRuby::Optimize::Optim
 	end
 
 	# Get candidates from population at given indices.
-	def candidates_with_indices(indices)
+	def get_candidates_with_indices(indices)
 		indices.map {|i| @population[i]}
 	end
 
 	# Get candidate from population at given index.
-	def candidate(index)
+	def get_candidate(index)
 		@population[index]
 	end
 

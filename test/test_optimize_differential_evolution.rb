@@ -14,15 +14,16 @@ class MinimizeRMSAndSum < MinimizeRMS
 end
 
 class TestDifferentialEvolution < MiniTest::Unit::TestCase
+	include FeldtRuby::Optimize
 	def setup
-		@s2 = FeldtRuby::Optimize::SearchSpace.new_symmetric(2, 1)
-		@s4 = FeldtRuby::Optimize::SearchSpace.new_symmetric(4, 1)
+		@s2 = SearchSpace.new_symmetric(2, 1)
+		@s4 = SearchSpace.new_symmetric(4, 1)
 
 		@o1 = MinimizeRMS.new
 		@o2 = MinimizeRMSAndSum.new
 
-		@de1 = FeldtRuby::Optimize::DifferentialEvolution.new(@o1, @s2, {:verbose => false, :maxNumSteps => 1000})
-		@de2 = FeldtRuby::Optimize::DifferentialEvolution.new(@o2, @s4, {:verbose => false, :maxNumSteps => 1234})
+		@de1 = DEOptimizer.new(@o1, @s2, {:verbose => false, :maxNumSteps => 1000})
+		@de2 = DEOptimizer.new(@o2, @s4, {:verbose => false, :maxNumSteps => 1234})
 	end
 
 	def test_de_for_small_vector_with_rms
@@ -35,7 +36,7 @@ class TestDifferentialEvolution < MiniTest::Unit::TestCase
 	def test_de_for_small_vector_with_rms_and_sum_for_more_steps
 		@de2.optimize()
 		# Very unlikely we get a number over 0.40 (4 elements)...
-		assert @de2.best.sum <= 0.20
+		assert @de2.best.sum <= 0.40
 		assert_equal 1234, @de2.num_optimization_steps
 	end
 end

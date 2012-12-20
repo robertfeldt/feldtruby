@@ -10,8 +10,8 @@ module FeldtRuby::Optimize
 		objectiveFuncClass = FeldtRuby::Optimize::ObjectiveMinimizeBlock, &costFunction)
 		objective = objectiveFuncClass.new(&costFunction)
 		num_vars = costFunction.arity
-		search_space = FeldtRuby::Optimize::SearchSpace.new_from_min_max(num_vars, min, max)
-		optimizer = FeldtRuby::Optimize::DifferentialEvolution.new(objective, search_space, options)
+		search_space = SearchSpace.new_from_min_max(num_vars, min, max)
+		optimizer = DEOptimizer.new(objective, search_space, options)
 		optimizer.optimize()
 		optimizer.best.to_a
 	end
