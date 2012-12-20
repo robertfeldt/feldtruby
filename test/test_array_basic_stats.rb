@@ -96,7 +96,7 @@ describe "Basic statistics" do
 		it "works for simple example" do
 			a = [1, 2, 3]
 			b = [2, 4, 7]
-			a.sum_squared_error(b).must_equal (1*1 + 2*2 + 4*4)
+			a.sum_squared_error(b).must_equal(1*1 + 2*2 + 4*4)
 		end
 	end
 
@@ -119,6 +119,12 @@ describe "Basic statistics" do
 
 		it "works when there are four inputs" do
 			[1, 2, 3, 4].median.must_equal 2.5
+		end
+	end
+
+	describe "summary_stats" do
+		it "gives a nice string with descriptive statistics" do
+			[1,2,3,4].summary_stats.must_equal "2.500 (min = 1.0, max = 4.0, median = 2.5, stdev = 1.12)"
 		end
 	end
 end

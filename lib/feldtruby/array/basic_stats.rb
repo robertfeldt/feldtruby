@@ -76,6 +76,11 @@ module BasicStatistics
 		self.each_with_index {|e,i| d = e-b[i]; sum += d*d}
 		sum
 	end
+
+	# Return summary stats for an array of numbers.
+	def summary_stats
+ 		"%.3f (min = %.1f, max = %.1f, median = %.1f, stdev = %.2f)" % [mean, self.min, self.max, median, stdev]
+ 	end
 end
 
 class Array
