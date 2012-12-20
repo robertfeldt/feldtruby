@@ -1,4 +1,5 @@
 require 'feldtruby'
+
 module FeldtRuby::Optimize; end
 
 require 'feldtruby/optimize/differential_evolution'

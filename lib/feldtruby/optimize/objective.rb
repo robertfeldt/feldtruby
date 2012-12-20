@@ -17,6 +17,7 @@ class FeldtRuby::Optimize::Objective
 	attr_accessor :current_version, :logger
 
 	def initialize
+		@logger = nil # To avoid getting warnings that logger has not been initialized
 		@current_version = 0
 		@pareto_front = Array.new(num_aspects)
 	end
@@ -271,8 +272,8 @@ end
 class Object
 	attr_accessor :_quality_value_without_check, :_objective, :_objective_version
 	def _quality_value
-		@_objective.ensure_updated_quality_value(self) if @_objective
-		@_quality_value_without_check
+		@_objective.ensure_updated_quality_value(self) if defined?(@_objective) && @_objective
+		@_quality_value_without_check ||= nil # To avoid warning if unset
 	end
 end
 

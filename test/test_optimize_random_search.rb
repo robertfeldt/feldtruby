@@ -1,15 +1,20 @@
 require 'feldtruby/optimize/random_search'
 require 'feldtruby/array/basic_stats'
 
-class MinimizeRMS < FeldtRuby::Optimize::Objective
-	def objective_min_rms(candidate)
-		candidate.rms
+
+unless defined?(MinimizeRMS)
+	class MinimizeRMS < FeldtRuby::Optimize::Objective
+		def objective_min_rms(candidate)
+			candidate.rms
+		end
 	end
 end
 
-class MinimizeRMSAndSum < MinimizeRMS
-	def objective_min_sum(candidate)
-		candidate.sum.abs
+unless defined?(MinimizeRMSAndSum)
+	class MinimizeRMSAndSum < MinimizeRMS
+		def objective_min_sum(candidate)
+			candidate.sum.abs
+		end
 	end
 end
 

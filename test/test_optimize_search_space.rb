@@ -1,4 +1,54 @@
+require 'minitest/spec'
 require 'feldtruby/optimize/search_space'
+
+describe "SearchSpace#bound" do
+	before do
+		@sp = FeldtRuby::Optimize::SearchSpace.new([-5, -3], [5, 7])
+	end
+
+	it "returns the values if they are INSIDE the search space boundaries" do
+		@sp.bound([-1, 0]).must_equal [-1, 0]
+	end
+
+	it "returns the values if they are ON the search space boundaries" do
+		@sp.bound([-5, -3]).must_equal 	[-5, -3]
+		@sp.bound([5, 7]).must_equal 		[5, 7]
+		@sp.bound([-5, 7]).must_equal 	[-5, 7]
+		@sp.bound([5, -3]).must_equal 	[5, -3]
+	end
+
+	it "generates a value INSIDE the search space boundaries when a value is given that is outside (negative, outside on one dimension)" do
+		l, h = @sp.bound([-10, 3.4])
+		h.must_equal 3.4
+		l.must_be :>=, -5
+		l.must_be :<=,  5
+
+		l, h = @sp.bound([-4.6, -4.1])
+		l.must_equal(-4.6)
+		h.must_be :>=, -3
+		h.must_be :<=,  7
+	end
+
+	it "generates a value INSIDE the search space boundaries when a value is given that is outside (positive, outside on one dimension)" do
+		l, h = @sp.bound([6, 2.7])
+		h.must_equal 2.7
+		l.must_be :>=, -5
+		l.must_be :<=,  5
+
+		l, h = @sp.bound([-4.6, 8.4])
+		l.must_equal(-4.6)
+		h.must_be :>=, -3
+		h.must_be :<=,  7
+	end
+
+	it "generates a value INSIDE the search space boundaries when a value is given that is outside (positive, outside on one dimension)" do
+		l, h = @sp.bound([-60.2, 1])
+		l.must_be :>=, -5
+		l.must_be :<=,  5
+		h.must_be :>=, -3
+		h.must_be :<=,  7
+	end
+end
 
 class TestSearchSpace < MiniTest::Unit::TestCase
 	def setup
@@ -37,37 +87,6 @@ class TestSearchSpace < MiniTest::Unit::TestCase
 	def test_new_from_min_max
 		ss = FeldtRuby::Optimize::SearchSpace.new_from_min_max(2, -7, 2)
 		assert_equal 2, ss.num_variables
-	end
-
-	def test_bound
-		s1 = FeldtRuby::Optimize::SearchSpace.new([-5, -3], [5, 7])
-		assert_equal [-1, 0], s1.bound([-1, 0])
-
-		l, h = s1.bound([-10, 3.4])
-		assert_equal 3.4, h
-		assert -5 <= l
-		assert 5 >= l
-
-		l, h = s1.bound([6, 2.7])
-		assert_equal 2.7, h
-		assert -5 <= l
-		assert 5 >= l
-
-		l, h = s1.bound([-4.6, 8.4])
-		assert_equal -4.6, l
-		assert -3 <= h
-		assert 7 >= h
-
-		l, h = s1.bound([-4.6, -4.1])
-		assert_equal -4.6, l
-		assert -3 <= h
-		assert 7 >= h
-
-		l, h = s1.bound([-60.2, 11])
-		assert -5 <= l
-		assert 5 >= l
-		assert -3 <= h
-		assert 7 >= h
 	end
 
 	def test_bound_returns_vector_if_supplied_a_vector

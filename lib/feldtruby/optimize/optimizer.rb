@@ -27,6 +27,7 @@ class FeldtRuby::Optimize::Optimizer
 	attr_reader :objective, :search_space, :best, :best_quality_value, :best_sub_quality_values, :num_optimization_steps, :termination_criterion
 
 	def initialize(objective, searchSpace = FeldtRuby::Optimize::DefaultSearchSpace, options = {})
+		@best = nil # To avoid warnings if not set
 		@objective, @search_space = objective, searchSpace
 		@options = FeldtRuby::Optimize.override_default_options_with(options)
 		initialize_options(@options)

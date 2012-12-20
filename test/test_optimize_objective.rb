@@ -22,7 +22,7 @@ class TestSingleObjective < MiniTest::Unit::TestCase
 	def test_quality_value
 		assert_equal 1, 	@o.quality_value([1])
 		assert_equal 3, 	@o.quality_value([1, 2])
-		assert_equal -42, 	@o.quality_value([1, 2, -45])
+		assert_equal( -42, 	@o.quality_value([1, 2, -45]) )
 	end
 end
 
@@ -82,13 +82,13 @@ class TestTwoObjectives < MiniTest::Unit::TestCase
 		# The previous worst is still the worst
 		assert_equal 0.0, @o.qv_mwgr([1,2,5])
 		# And now some complex ones that are between the prev best and worst
-		assert_equal ((4.0 - 3.0)/(4-2) + (8.0 - 7)/(8-6))/2, @o.qv_mwgr([1,2,4])
-		assert_equal ((4.0 - 3.5)/(4-2) + (8.0 - 7.5)/(8-6))/2, @o.qv_mwgr([1,2,4.5])
+		assert_equal( ((4.0 - 3.0)/(4-2) + (8.0 - 7)/(8-6))/2, @o.qv_mwgr([1,2,4]) )
+		assert_equal( ((4.0 - 3.5)/(4-2) + (8.0 - 7.5)/(8-6))/2, @o.qv_mwgr([1,2,4.5]) )
 		# Now extend the global best with a new best
 		assert_equal 1.0, @o.qv_mwgr([1,2,2]) # new global min = [1, 5] and max the same at [4, 8]
 		# And the in between candidates now have new values based on the new mins
-		assert_equal ((4.0 - 3.0)/(4-1) + (8.0 - 7)/(8-5))/2, @o.qv_mwgr([1,2,4])
-		assert_equal ((4.0 - 3.5)/(4-1) + (8.0 - 7.5)/(8-5))/2, @o.qv_mwgr([1,2,4.5])
+		assert_equal( ((4.0 - 3.0)/(4-1) + (8.0 - 7)/(8-5))/2, @o.qv_mwgr([1,2,4]) )
+		assert_equal( ((4.0 - 3.5)/(4-1) + (8.0 - 7.5)/(8-5))/2, @o.qv_mwgr([1,2,4.5]) )
 	end
 end
 
@@ -106,7 +106,7 @@ describe "Objective" do
 	end
 
 	it "overwrites quality value if evaluated again with another objective" do
-		qv = @o.quality_value(@c)
+		@o.quality_value(@c)
 		qv2 = @o2.quality_value(@c)
 		@c._quality_value.must_equal qv2
 		@c._objective.must_equal @o2
