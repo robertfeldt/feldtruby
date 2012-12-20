@@ -8,11 +8,18 @@ end
 
 # Differential Evolution for continuous, real-valued optimization.
 class FeldtRuby::Optimize::DifferentialEvolution < FeldtRuby::Optimize::EvolutionaryOptimizer
+	DefaultOptions = {
+		:DE_F_ScaleFactor 			=> 0.7,
+		:DE_CR_CrossoverRate 		=> 0.5,
+		:DE_NumParentsToSample	=> 4
+	}
+
 	def initialize_options(options)
 		super
-		@f = @scale_factor = options[:DE_F_ScaleFactor] || 0.8
-		@cr = @crossover_rate = options[:DE_CR_CrossoverRate] || 0.5
-		@num_parents_to_sample = options[:DE_NumParentsToSample] || 4
+		#options = DefaultOptions.clone.update(options)
+		@f = @scale_factor = options[:DE_F_ScaleFactor]
+		@cr = @crossover_rate = options[:DE_CR_CrossoverRate]
+		@num_parents_to_sample = options[:DE_NumParentsToSample]
 	end
 
 	# Create a population of a given size by randomly sampling candidates from the search space
