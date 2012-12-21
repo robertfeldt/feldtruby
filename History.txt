@@ -1,6 +1,4 @@
-=== 1.0.0 / 2012-12-17
+=== 0.2.0 / 2012-12-21
 
-* 1 major enhancement
-
-  * Birthday!
+* First public release since we need it in some other projects and local install is messy...
 

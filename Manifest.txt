@@ -21,13 +21,11 @@ lib/feldtruby/optimize/objective.rb
 lib/feldtruby/optimize/optimizer.rb
 lib/feldtruby/optimize/random_search.rb
 lib/feldtruby/optimize/search_space.rb
-lib/feldtruby/optimize/self_adaptation.rb
 lib/feldtruby/optimize/stdout_logger.rb
 lib/feldtruby/string/to_iso.rb
 lib/feldtruby/time.rb
 lib/feldtruby/vector.rb
 lib/feldtruby/visualization/circos.rb
-lib/feldtruby/visualization/slopegraph.rb
 lib/feldtruby/word_counter.rb
 test/helper.rb
 test/test_array.rb
