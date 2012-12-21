@@ -11,6 +11,7 @@ module BasicStatistics
 	def average; mean(); end
 
 	def median
+		return nil if length == 0
 		sorted = self.sort
 		if self.length % 2 == 0
 			mid = self.length / 2

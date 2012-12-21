@@ -101,6 +101,10 @@ describe "Basic statistics" do
 	end
 
 	describe "median" do
+		it "works when there is no value" do
+			[].median.must_equal nil
+		end
+
 		it "works when there is a single value" do
 			[1].median.must_equal 1
 		end
