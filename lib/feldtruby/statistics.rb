@@ -16,8 +16,14 @@ class RCommunicator
     setup_r()
   end
 
+  # Include necessary libraries.
   def setup_r
-    @r.eval "library(rjson)"
+    include_library("rjson")
+  end
+
+  # Include a library after ensuring it has been installed
+  def include_library(lib)
+    @r.eval "if(!library(#{lib}, logical.return=TRUE)) {install.packages(\"#{lib}\"); library(#{lib});}"
   end
 
   def eval(str)
