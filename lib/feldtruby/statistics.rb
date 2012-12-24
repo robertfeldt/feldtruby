@@ -96,6 +96,13 @@ module Statistics
     res = RC.call("prop.test", vs, ([vs.sum] * vs.length))
     res.p_value
   end
+
+  def chi_squared_test(aryOrHashOfCounts)
+    counts = (Hash === aryOrHashOfCounts) ? aryOrHashOfCounts : aryOrHashOfCounts.counts
+    vs = counts.values
+    res = RC.call("chisq.test", vs)
+    res.p_value
+  end
 end
 
 # Make them available at top level

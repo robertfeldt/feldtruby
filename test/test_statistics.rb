@@ -75,12 +75,12 @@ require 'feldtruby/minitest_extensions'
 
 describe "Test Statistics but with the extensions to MiniTest framework" do
   it "can use assert_same_proportions" do
-    assert_similar_proportions [1,1,1,1,1, 2,2,2,2,2]
+    assert_similar_proportions( [1]*10 + [2]*10 )
     # This should fail but I found now way to test it since it uses the MiniTest framework itself...
     # assert_similar_proportions( [1]*60 + [2]*40 )
   end
 
   it "can use must_have_similar_proportions" do
-    [1,1,1,1,1, 2,2,2,2,2].must_have_similar_proportions
+    ([1]*10 + [2]*10).must_have_similar_proportions
   end
 end
