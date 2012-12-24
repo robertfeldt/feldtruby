@@ -52,10 +52,11 @@ class RCommunicator
     resname = res_name(1)
     str += "#{resname} <- toJSON(#{rmethod.to_s}(#{args.join(', ')}));\n"
     @r.eval str
-    pull_variable(resname)
+    pull_json_variable(resname)
   end
 
-  def pull_variable(variableName)
+  # Get the JSON value from a variable in R and parse it back to a Ruby value.
+  def pull_json_variable(variableName)
     res = @r.pull(variableName)
     begin
       Rvalue.new JSON.parse(res)
