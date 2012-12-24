@@ -98,6 +98,9 @@ module Statistics
   end
 end
 
+# Make them available at top level
+extend Statistics
+
 end
 
 # Create one instance that people can use without having to instantiate.
