@@ -76,6 +76,8 @@ class RCommunicator
     end
   end
 
+  private
+
   def res_name(index = 1)
     arg_name(index, "res")
   end
