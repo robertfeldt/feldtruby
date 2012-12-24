@@ -68,4 +68,36 @@ describe "Array extensions" do
 			]
 		end		
 	end
+
+	describe "add_unless_there" do
+		it "adds an element when array is empty" do
+			[].add_unless_there(1).must_equal [1]
+		end
+	
+		it "adds an element when array is NOT empty" do
+			[1,2].add_unless_there(3).must_equal [1,2,3]
+		end
+	
+		it "does nothing when element is already in array" do
+			[1,2,3].add_unless_there(3).must_equal [1,2,3]
+		end
+	end
+
+	describe "count_elements" do
+		it "counts elements when only two of them" do
+			counts = [2,1,2,2,1,1,2,1,2].counts
+			counts.keys.sort.must_equal [1,2]
+			counts[1].must_equal 4
+			counts[2].must_equal 5
+		end
+
+		it "counts elements when many different elements and of different types" do
+			counts = [:a, :b, :b, "c", "d", 5, "c", 5, "c", "d", 5, "d", 5, 5, "d"].counts
+			counts[:a].must_equal 1
+			counts[:b].must_equal 2
+			counts["c"].must_equal 3
+			counts["d"].must_equal 4
+			counts[5].must_equal 5
+		end
+	end
 end

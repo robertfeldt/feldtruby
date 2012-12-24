@@ -31,4 +31,17 @@ class Array
 		end
 		res
 	end
+
+	# Add an element unless it is already in the array
+	def add_unless_there(element)
+		self << element unless self.include?(element)
+		self
+	end
+
+	# Count elements in array and return as hash mapping elements to their counts.
+	def counts
+		count_hash = Hash.new(0)
+		self.each {|element| count_hash[element] += 1}
+		count_hash
+	end
 end
