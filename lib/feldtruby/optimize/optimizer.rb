@@ -4,6 +4,7 @@ require 'feldtruby/optimize/search_space'
 require 'feldtruby/optimize/stdout_logger'
 require 'feldtruby/optimize/max_steps_termination_criterion'
 require 'feldtruby/math/rand'
+require 'feldtruby/array'
 
 module FeldtRuby::Optimize 
 	DefaultOptimizationOptions = {

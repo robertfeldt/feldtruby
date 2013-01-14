@@ -1,0 +1,18 @@
+PATH
+  remote: .
+  specs:
+    feldtruby (0.3.3)
+      json
+      rinruby
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    json (1.7.6)
+    rinruby (2.0.3)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  feldtruby!
