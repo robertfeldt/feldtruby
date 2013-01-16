@@ -13,7 +13,12 @@ class FeldtRuby::Optimize::StdOutLogger
 		@verbose = verbose
 		@start_time = Time.now # To ensure we have a value even if optimizer forgot calling note_optimization_starts
 		@events = Hash.new(0)
-		@last_report_time = Hash.new(Time.new("1970-01-01")) # Maps event strings to the last time they were reported on, used by anote.
+		# Old version of Time does not take a data as argument so use utc for those cases
+		if RUBY_VERSION < "1.9"
+			@last_report_time = Hash.new(Time.utc(1970, "jan", 1))
+		else			
+			@last_report_time = Hash.new(Time.new("1970-01-01")) # Maps event strings to the last time they were reported on, used by anote.
+		end
 		if verbose
 			@outstream = STDOUT
 		else
