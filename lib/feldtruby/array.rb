@@ -44,4 +44,8 @@ class Array
 		self.each {|element| count_hash[element] += 1}
 		count_hash
 	end
+
+	def sample
+		self[rand(self.length)]
+	end
 end

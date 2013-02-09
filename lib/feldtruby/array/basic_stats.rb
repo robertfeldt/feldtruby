@@ -21,6 +21,46 @@ module BasicStatistics
 		end
 	end
 
+	# Calculate the values that cuts the data into 0%, 25%, 50%, 75% and 100%.
+	# This corresponds to the min, 1st quartile, 2nd quartile, 3rd quartile and the max.
+	def quantiles
+		return [nil, nil, nil, nil, nil] if length == 0
+		sorted = self.sort
+		q1 = sorted.quantile_at_ratio(0.25)
+		q2 = sorted.quantile_at_ratio(0.50)
+		q3 = sorted.quantile_at_ratio(0.75)
+		return sorted.first, q1, q2, q3, sorted.last
+	end
+
+	# Calculate the quantile at a given ratio (must be between 0.0 and 1.0) assuming self
+	# is a sorted array. This is based on the type 7 quantile function in R.
+	def quantile_at_ratio(p)
+		n = self.length
+		h = (n - 1) * p + 1
+		hfloor = h.floor
+		if h == hfloor
+			self[hfloor-1]
+		else
+			x_hfloor = self[hfloor-1]
+			x_hfloor + (h - hfloor)*(self[hfloor] - x_hfloor)
+		end
+	end
+
+	# Calculate the three quartiles of the array.
+	def quartiles
+		return [nil, nil, nil] if length == 0
+		sorted = self.sort
+		q1 = sorted.quantile_at_ratio(0.25)
+		q2 = sorted.quantile_at_ratio(0.50)
+		q3 = sorted.quantile_at_ratio(0.75)
+		return q1, q2, q3
+	end
+
+	def inter_quartile_range
+		q1, q2, q3 = quartiles
+		q3 - q1
+	end
+
 	def variance
 		return 0 if self.length == 0
 		avg = self.mean

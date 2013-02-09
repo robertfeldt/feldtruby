@@ -119,9 +119,9 @@ module Statistics
     # Given a R object with the four sub-values named densities, mesh, sum_density, mesh_interval, min, max
     # we can calculate the probability of new values.
     def initialize(rvalue)
+      @probabilities = rvalue.probabilities
       @densities = rvalue.densities
       @mesh = rvalue.mesh
-      @sum_density = rvalue.sum_density.to_f
       @mesh_interval = rvalue.mesh_interval.to_f
       @min, @max = rvalue.min.to_f, rvalue.max.to_f
     end
@@ -133,13 +133,15 @@ module Statistics
     end
 
     def probability_of(value)
-      density_of(value) / @sum_density
+      return 0.0 if value < @min || value > @max
+      bin_index = ((value - @min) / @mesh_interval).floor
+      @probabilities[bin_index]
     end
   end
 
   # Do a kernel density estimation based on the sampled _values_, with n bins (rounded up to nearest exponent of 2)
   # and optional min and max values.
-  def density_estimation(values, n = 2**12, min = nil, max = nil)
+  def density_estimation(values, n = 2**9, min = nil, max = nil)
     # Ensure we have loaded the diffusion.kde code
     RC.load_feldtruby_r_script("diffusion_kde.R")
     args = [values, n]

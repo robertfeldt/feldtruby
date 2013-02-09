@@ -4,8 +4,9 @@
 # Our changes:
 #   - Renamed function from kde to diffusion.kde
 #   - Return an object instead of a matrix
-#   - Added the sum of the densities so that the actual probability in each interval can be estimated
+#   - Added the sum of the densities
 #   - Added the mesh interval
+#   - Added the probabilities for each interval
 # No license was specified on this piece of code. For questions about it please contact
 # Prof. Botev on the email: botev@maths.uq.edu.au
 diffusion.kde <- function(data,n,MIN,MAX){
@@ -109,5 +110,7 @@ density=idct1d(a_t)/R;
 bandwidth=sqrt(t_star)*R;
 xmesh=seq(MIN,MAX,R/(n-1));
 # out=matrix(c(xmesh,density),nrow=2,byrow=TRUE);
-list(densities = density, mesh = xmesh, sum_density = sum(density), mesh_interval = (R/(n-1)), min = MIN, max = MAX)
+posd = density + abs(min(0.0, min(density))); # Ensure least density is 0.0 before calcing probabilities
+list(probabilities = (posd / sum(posd)), densities = density, mesh = xmesh, 
+  sum_density = sum(density), mesh_interval = (R/(n-1)), min = MIN, max = MAX)
 }
