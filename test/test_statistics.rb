@@ -69,6 +69,19 @@ describe "Statistics" do
       probability_of_same_proportions(([:a] * 570) + ([:b] * 430)).must_be_close_to 5.091e-10
     end
   end
+
+  describe "Diffusions Kernel Density Estimation based on R code loaded from the feldtruby R directory" do
+    it "works for simple examples" do
+      data = [1]
+      kde = density_estimation(data, 4, 0.0, 3.0)
+      kde.mesh.must_equal [0.0, 1.0, 2.0, 3.0]
+      kde.densities.length.must_equal 4
+      kde.densities[0].must_be_close_to 0.3912
+      kde.densities[1].must_be_close_to 0.3591
+      kde.densities[2].must_be_close_to 0.3101
+      kde.densities[3].must_be_close_to 0.2728
+    end
+  end
 end
 
 require 'feldtruby/minitest_extensions'

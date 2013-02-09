@@ -4,4 +4,6 @@ if RUBY_VERSION < "1.9"
 end
 
 # This is the namespace under which we put things...
-module FeldtRuby; end
+module FeldtRuby
+  TopDirectory = File.dirname(__FILE__).split("/")[0...-1].join("/")
+end

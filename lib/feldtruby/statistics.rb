@@ -26,6 +26,15 @@ class RCommunicator
     @r.eval "if(!library(#{lib}, logical.return=TRUE)) {install.packages(\"#{lib}\"); library(#{lib});}"
   end
 
+  # Load R scripts in the feldtruby/R directory.
+  def load_feldtruby_r_script(scriptName, reload = false)
+    @loaded_scripts ||= Array.new # Ensure there is an empty array for loaded script names, if this is first call here.
+    return if reload == false && @loaded_scripts.include?(scriptName)
+    @loaded_scripts << scriptName
+    path = File.join(FeldtRuby::TopDirectory, "R", scriptName)
+    @r.eval "source(\"#{path}\")"
+  end
+
   def eval(str)
     @r.eval str
   end
@@ -102,6 +111,43 @@ module Statistics
     vs = counts.values
     res = RC.call("chisq.test", vs)
     res.p_value
+  end
+
+  class DiffusionKDE
+    attr_reader :densities, :mesh
+
+    # Given a R object with the four sub-values named densities, mesh, sum_density, mesh_interval, min, max
+    # we can calculate the probability of new values.
+    def initialize(rvalue)
+      @densities = rvalue.densities
+      @mesh = rvalue.mesh
+      @sum_density = rvalue.sum_density.to_f
+      @mesh_interval = rvalue.mesh_interval.to_f
+      @min, @max = rvalue.min.to_f, rvalue.max.to_f
+    end
+
+    def density_of(value)
+      return 0.0 if value < @min || value > @max
+      bin_index = ((value - @min) / @mesh_interval).floor
+      @densities[bin_index]
+    end
+
+    def probability_of(value)
+      density_of(value) / @sum_density
+    end
+  end
+
+  # Do a kernel density estimation based on the sampled _values_, with n bins (rounded up to nearest exponent of 2)
+  # and optional min and max values.
+  def density_estimation(values, n = 2**12, min = nil, max = nil)
+    # Ensure we have loaded the diffusion.kde code
+    RC.load_feldtruby_r_script("diffusion_kde.R")
+    args = [values, n]
+    if min && max
+      args << min
+      args << max
+    end
+    DiffusionKDE.new RC.call("diffusion.kde", *args)
   end
 end
 
