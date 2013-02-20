@@ -23,3 +23,14 @@ describe "Z normalization" do
     data.z_normalize.must_be_close_to expected
   end
 end
+
+describe "Min-Max normalization" do
+  it "handles empty arrays" do
+    [].min_max_normalize.must_equal []
+  end
+
+  it "works for example from http://wiki.answers.com/Q/What_is_min-max_normalization" do
+    data = [20, 24, 26, 27, 30]
+    data.min_max_normalize.must_be_close_to [0.0, 0.4, 0.6, 0.7, 1.0]
+  end
+end
