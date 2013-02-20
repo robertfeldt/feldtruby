@@ -71,6 +71,17 @@ module BasicStatistics
 		Math.sqrt( self.variance )
 	end
 
+	# Same as R's var, i.e. uses N-1 in denominator.
+	def var
+		n = self.length.to_f
+		(variance * n) / (n-1)
+	end
+
+	# Save as R's sd, i.e. uses N-1 in denominator.
+	def sd
+		Math.sqrt( self.var )
+	end
+
 	def root_mean_square
 		Math.sqrt( self.map {|v| v**2}.mean )
 	end
