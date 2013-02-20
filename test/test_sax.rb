@@ -46,10 +46,16 @@ describe 'Symbolic Adaptive approXimation - SAX' do
     sax.process([-1, -0.5, 0, 0.5, 1].reverse).must_equal [1,2,3,3,4].reverse
   end
 
-  it "maps some simple time series to symbols when directly mapping values" do
+  it "maps some simple time series to symbols when window size is 2" do
     sax = SAX.new(2, 4)
     sax.process([-1, 0, 0, 1]).must_equal [2,3]
     sax.process([-1, 0, 0, 1]).must_equal [2,3]
     sax.process([-1, -1, -1, 0, 0, 1, 1, 1]).must_equal [1,2,3,4]
+  end
+
+  it "maps some simple time series to symbols when window size is 4" do
+    sax = SAX.new(4, 4)
+    sax.process([-1, 0, 0, 1]).must_equal [3]
+    sax.process([-1, -1, -1, 0, 0, 1, 1, 1]).must_equal [1,4]
   end
 end
