@@ -24,7 +24,7 @@ class SAX
   # mapper is state-less and normalizes each subsequence and then assumes
   # a normal distribution and thus uses a fixed selection of bins.
   class SymbolMapper
-    def initialize(data)
+    def initialize(data = nil)
       # This standard mapper does not utilize the whole data sequence to precalc mapping values. But subclasses might.
     end
 
@@ -69,25 +69,30 @@ class SAX
 
   def setup_for_processing_data(data, mapper = nil)
     @mapper ||= SymbolMapper.new(data)
-    unless mapper.supports_alphabet_size?(@alphabet_size)
-      raise ArgumentError.new("Mapper does not support the alphabet size (#{@alphabet_size}): #{mapper}")
+    unless @mapper.supports_alphabet_size?(@alphabet_size)
+      raise ArgumentError.new("Mapper does not support the alphabet size (#{@alphabet_size}): #{@mapper}")
     end
   end
 
   def process_subsequence(subsequence)
-    subsequence = subsequence.z_normalize
+    normalized_ss = subsequence.z_normalize
+    len, rem = normalized_ss.length.divmod @elements_per_word
     # Note that if the lengths are not evenly divisible the last word will be based on fewer elements. 
     # This is different than the orig SAX as specified in their paper.
-    (0..(data.length / @elements_per_word)).map do |wordindex|
-      @mapper.map_subsequence_to_symbol(subsequence[wordindex * @elements_per_word, @elements_per_word])
+    symbols = (0...len).map do |wordindex|
+      @mapper.map_sequence_to_symbol(normalized_ss[wordindex * @elements_per_word, @elements_per_word], @alphabet_size)
     end
+    symbols << @mapper.map_sequence_to_symbol(normalized_ss[len, @elements_per_word], @alphabet_size) if rem > 0
+    symbols
   end
 
   def process(data, windowSize = data.length, mapper = nil)
     setup_for_processing_data(data, mapper)
-    (0..(data.length - windowSize)).map do |i|
+    res = (0..(data.length - windowSize)).map do |i|
       process_subsequence(data[i, windowSize])
     end
+    res = res.flatten if windowSize == data.length
+    res
   end
 end
 
