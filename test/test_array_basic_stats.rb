@@ -131,4 +131,28 @@ describe "Basic statistics" do
 			[1,2,3,4].summary_stats.must_equal "2.500 (min = 1.0, max = 4.0, median = 2.5, stdev = 1.12)"
 		end
 	end
+
+	describe "quantile- and quartile-related functionality" do
+		it "can calc quantiles, quartiles and IQR for the set used as example for even-numbered sequence for quantiles on Wikipedia" do
+			seq = [3, 6, 7, 8, 8, 10, 13, 15, 16, 20]
+			seq.quartiles.must_equal [7.25, 9, 14.5]
+			seq.quantiles.must_equal [3, 7.25, 9, 14.5, 20]
+			seq.inter_quartile_range.must_equal (14.5-7.25)
+		end
+
+		it "can calc quantiles, quartiles and IQR for the set used as example for odd-numbered sequence for quantiles on Wikipedia" do
+			seq = [3, 6, 7, 8, 8, 9, 10, 13, 15, 16, 20]
+			seq.quartiles.must_equal [7.5, 9, 14]
+			seq.quantiles.must_equal [3, 7.5, 9, 14, 20]
+			seq.inter_quartile_range.must_equal 6.5
+		end
+
+		it "can calc quantiles, quartiles and IQR for the set used as example for quartiles on Wikipedia" do
+			seq = [6, 47, 49, 15, 42, 41, 7, 39, 43, 40, 36]
+			
+			seq.quartiles.must_equal [25.5, 40, 42.5]
+			seq.quantiles.must_equal [6, 25.5, 40.0, 42.5, 49]
+			seq.inter_quartile_range.must_equal 17.0
+		end
+	end
 end

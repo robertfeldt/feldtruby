@@ -100,4 +100,11 @@ describe "Array extensions" do
 			counts[5].must_equal 5
 		end
 	end
+
+	describe "sample" do
+		it "only samples within the array" do
+			d = (1..100).to_a
+			100.times { d.include?(d.sample).must_equal(true) }
+		end
+	end
 end
