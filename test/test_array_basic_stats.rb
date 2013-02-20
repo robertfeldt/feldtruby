@@ -60,6 +60,14 @@ class TestArrayBasicStats < MiniTest::Unit::TestCase
 	end
 end
 
+describe "mean and stdev" do
+	it "works for Time series 1 from http://code.google.com/p/jmotif/wiki/ZNormalization" do
+    data = [2.02, 2.33, 2.99, 6.85, 9.20, 8.80, 7.50, 6.00, 5.85, 3.85, 4.85, 3.85, 2.22, 1.45, 1.34]
+    data.mean.must_be_close_to 4.606667
+    data.sd.must_be_close_to 2.640316
+  end
+end
+
 describe "Basic statistics" do
 	describe "sum of abs" do
 		it "works for simple example" do
