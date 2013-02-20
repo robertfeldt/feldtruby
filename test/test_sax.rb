@@ -39,8 +39,10 @@ describe 'Symbolic Adaptive approXimation - SAX' do
     proc {SAX.new(3, 1)}.must_raise ArgumentError
   end
 
-  it "maps some simple time series to symbols" do
+  it "maps some simple time series to symbols when directly mapping" do
     sax = SAX.new(1, 4)
     sax.process([-1, 0, 1]).must_equal [1,3,4]
+    sax.process([-1, -0.5, 0, 0.5, 1]).must_equal [1,2,3,3,4]
+    sax.process([-1, -0.5, 0, 0.5, 1].reverse).must_equal [1,2,3,3,4].reverse
   end
 end
