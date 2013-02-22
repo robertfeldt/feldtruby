@@ -2,10 +2,18 @@ feldtruby
 =========
 Robert Feldt's Common Ruby Code lib. I will gradually collect the many generally useful Ruby tidbits I have laying around and clean them up into here. Don't want to rewrite these things again and again... So far this collects a number of generally useful additions to the standard Ruby classes/libs and then includes a simple optimization framework (FeldtRuby::Optimize).
 
+Note that good documentation is not really a focus here. As things mature in here I will move logically unique/separate sets of functionality into separate Ruby libs/gems of useful code. At that point there will be more focus on documentation.
+
 email: robert.feldt ((a)) gmail.com
 
 Contents
 --------
+
+### Statistics
+  Cluster linkage metrics
+  Access to R from Ruby (extends existing lib so that you can more easily transfer complex objects back to Ruby)
+  ...
+
 ### Time
 	Time.timestamp()    				# Get a timestamp string back with the current time
 
