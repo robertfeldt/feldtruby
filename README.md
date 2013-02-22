@@ -10,9 +10,9 @@ Contents
 --------
 
 ### Statistics
-  Cluster linkage metrics
-  Access to R from Ruby (extends existing lib so that you can more easily transfer complex objects back to Ruby)
-  ...
+* Cluster linkage metrics
+* Access to R from Ruby (extends existing lib so that you can more easily transfer complex objects back to Ruby)
+* ...
 
 ### Time
 	Time.timestamp()    				# Get a timestamp string back with the current time
@@ -55,17 +55,7 @@ numerical optimization using DE:
 		(1 - x)**2 + 100*(y - x*x)**2
 	}
 
-Contributing to feldtruby
-------------------------- 
-* Check out the latest master to make sure the feature hasn't been implemented or the bug hasn't been fixed yet.
-* Check out the issue tracker to make sure someone already hasn't requested it and/or contributed it.
-* Fork the project.
-* Start a feature/bugfix branch.
-* Commit and push until you are happy with your contribution.
-* Make sure to add tests for it. This is important so I don't break it in a future version unintentionally.
-* Please try not to mess with the Rakefile, version, or history. If you want to have your own version, or is otherwise necessary, that is fine, but please isolate to its own commit so I can cherry-pick around it.
-
 Copyright
 ------------
-Copyright (c) 2012 Robert Feldt. See LICENSE.txt for
+Copyright (c) 2012-2013 Robert Feldt. See LICENSE.txt for
 further details.
