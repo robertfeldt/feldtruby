@@ -7,12 +7,29 @@ def psys(str)
   system str
 end
 
+def run_tests(testFiles)
+  helper_files = Dir["test/**/*helper*.rb"]
+  require_files = (helper_files + testFiles).map {|f| "require \"#{f}\""}.join('; ')
+  psys "ruby -Ilib:. -e '#{require_files}' --"
+end
+
 desc "Run all tests"
 task :test do
-  helper_files = Dir["test/**/*helper*.rb"]
-  test_files = Dir["test/**/test*.rb"]
-  require_files = (helper_files + test_files).map {|f| "require \"#{f}\""}.join('; ')
-  psys "ruby -Ilib:. -e '#{require_files}' --"
+  run_tests Dir["test/**/test*.rb"]
+end
+
+def filter_latest_changed_files(filenames, numLatestChangedToInclude = 1)
+  filenames.sort_by{ |f| File.mtime(f) }[-numLatestChangedToInclude, numLatestChangedToInclude]
+end
+
+desc "Run only the latest changed test file"
+task :t do
+  run_tests filter_latest_changed_files(Dir["test/**/test*.rb"])
+end
+
+desc "Run only the latest two changed test file"
+task :t2 do
+  run_tests filter_latest_changed_files(Dir["test/**/test*.rb"], 2)
 end
 
 desc "Clean up intermediate/build files"
