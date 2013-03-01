@@ -1,8 +1,7 @@
-
 require 'feldtruby/optimize'
 require 'feldtruby/float'
 
-# An Objective captures one or more objectives into a single object
+# An Objective captures one or more (sub-)objectives into a single object
 # and supports a large number of ways to utilize basic objective
 # functions in a single framework. You subclass and add instance
 # methods named as 
@@ -49,9 +48,13 @@ class FeldtRuby::Optimize::Objective
 		@num_aspects ||= aspect_methods.length
 	end
 
+	def num_sub_objectives
+		num_aspects
+	end
+
 	# Class for representing multi-objective qualitites...
 	class QualityValue
-		attr_reader :qv, :sub_qvs
+		attr_reader :qv, :sub_qvs, :objective
 
 		def initialize(qv, subQvs, objective)
 			@qv, @sub_qvs, @objective = qv, subQvs, objective
@@ -119,6 +122,11 @@ class FeldtRuby::Optimize::Objective
 	def quality_value(candidate, weights = nil)
 		return candidate._quality_value_without_check if quality_value_is_up_to_date?(candidate)
 		num_aspects == 1 ? qv_single(candidate) : qv_mwgr(candidate, weights)
+	end
+
+	# Return the fitness of a candidate. It is the same as the quality value above.
+	def fitness(candidate, weights = nil)
+		quality_value(candidate, weights)
 	end
 
 	def quality_value_is_up_to_date?(candidate)
