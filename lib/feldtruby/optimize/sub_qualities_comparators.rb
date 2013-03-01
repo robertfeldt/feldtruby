@@ -6,6 +6,7 @@ class SubQualitiesComparator
   def initialize(objective)
     @objective = objective
   end
+
   # Compare two sub-quality vectors and return
   #   -1 if the first one dominates the other one
   #    0 if none of them dominate the other
