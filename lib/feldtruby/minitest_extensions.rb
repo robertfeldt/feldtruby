@@ -10,8 +10,18 @@ module MiniTest::Assertions
     pvalue = FeldtRuby.chi_squared_test(values)
     assert(pvalue > expectedPValue, msg || "Proportions differ! p-value is #{pvalue} (<0.05), counts: #{values.counts.inspect}")
   end
+
+  def assert_falsey(value, msg = nil)
+    assert(value.!, msg || "#{value} is not falsey (it is #{value})")
+  end
+
+  def assert_truthy(value, msg = nil)
+    assert(value, msg || "#{value} is not truthy (it is #{value})")
+  end
 end
 
 module MiniTest::Expectations
   infect_an_assertion :assert_similar_proportions, :must_have_similar_proportions
+  infect_an_assertion :assert_falsey, :must_be_falsey
+  infect_an_assertion :assert_truthy, :must_be_truthy
 end
