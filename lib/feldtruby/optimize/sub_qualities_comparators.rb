@@ -6,12 +6,27 @@ class SubQualitiesComparator
   def initialize(objective)
     @objective = objective
   end
+  # Compare two sub-quality vectors and return
+  #   -1 if the first one dominates the other one
+  #    0 if none of them dominate the other
+  #    1 if the second one dominates the first one
   def compare_sub_qualitites(subQualitites1, subQualitites2)
     raise NotImplementedError
   end
+
   def compare_candidates(candidate1, candidate2)
     sq1, sq2 = @objective.sub_qualities_of(candidate1), @objective.sub_qualities_of(candidate2)
     compare_sub_qualitites sq1, sq2
+  end
+
+  # True iff the first dominates the second sub-quality vectors.
+  def first_dominates?(subQualitites1, subQualitites2)
+    compare_sub_qualitites(subQualitites1, subQualitites2) == -1
+  end
+
+  # True iff the second dominates the first sub-quality vectors.
+  def second_dominates?(subQualitites1, subQualitites2)
+    compare_sub_qualitites(subQualitites1, subQualitites2) == 1
   end
 end
 

@@ -8,6 +8,9 @@ describe "EpsilonNonDominance with epsilon=0.0 i.e. normal non-dominance" do
   it "correctly calculates dominance for single-objective examples" do
     @c.compare_sub_qualitites([1], [1]).must_equal 0
 
+    @c.first_dominates?([1], [1]).must_equal false
+    @c.second_dominates?([1], [1]).must_equal false
+
     @c.compare_sub_qualitites([1], [2]).must_equal -1
     @c.compare_sub_qualitites([2], [1]).must_equal 1
 
