@@ -19,7 +19,7 @@ describe "EpsilonNonDominance with epsilon=0.0 i.e. normal non-dominance" do
   end
 
   it "correctly calculates dominance for two-objective examples" do
-    @c.compare_sub_qualitites([1, 1], [1, 1]).must_equal 0
+    @c.compare_sub_qualitites([2, 1], [2, 1]).must_equal 0
 
     @c.compare_sub_qualitites([1, 2], [1, 3]).must_equal -1
     @c.compare_sub_qualitites([1, 3], [1, 2]).must_equal 1
@@ -28,6 +28,16 @@ describe "EpsilonNonDominance with epsilon=0.0 i.e. normal non-dominance" do
     @c.compare_sub_qualitites([3, -1], [2, -1]).must_equal 1
 
     @c.compare_sub_qualitites([1, 2], [2, 1]).must_equal 0
+  end
+
+  it "correctly calculates dominance for three-objective examples" do
+    @c.compare_sub_qualitites([1, 2, 4], [1, 2, 4]).must_equal 0
+
+    @c.compare_sub_qualitites([1, 2, 4], [1, 3, 4]).must_equal -1
+    @c.compare_sub_qualitites([1, 3, 4], [1, 2, 4]).must_equal 1
+
+    @c.compare_sub_qualitites([1, 2, 3], [1, 3, 4]).must_equal -1
+    @c.compare_sub_qualitites([1, 3, 4], [1, 2, 3]).must_equal 1
   end
 
   it "never shows dominance when comparing the same objects" do
@@ -53,5 +63,44 @@ describe "EpsilonNonDominance with epsilon=0.0 i.e. normal non-dominance" do
       candidate2[rand(candidate2.length)] -= 1
       @c.compare_sub_qualitites(candidate1, candidate2).must_equal 1
     end
+  end
+end
+
+describe "EpsilonNonDominance with epsilon=1.0" do
+  before do
+    @c = FeldtRuby::Optimize::EpsilonNonDominance.new(1, 1.0)
+  end
+
+  it "correctly calculates dominance for single-objective examples" do
+    @c.compare_sub_qualitites([1], [1]).must_equal 0
+
+    @c.compare_sub_qualitites([1], [2]).must_equal 0
+    @c.compare_sub_qualitites([2], [1]).must_equal 0
+
+    @c.compare_sub_qualitites([1], [2.01]).must_equal -1
+    @c.compare_sub_qualitites([2.01], [1]).must_equal 1
+
+    @c.compare_sub_qualitites([-1], [1]).must_equal -1
+    @c.compare_sub_qualitites([1], [-1]).must_equal 1
+
+    @c.compare_sub_qualitites([-10], [0]).must_equal -1
+    @c.compare_sub_qualitites([0], [-10]).must_equal 1
+  end
+
+  it "correctly calculates dominance for two-objective examples" do
+    @c.compare_sub_qualitites([2, 1], [2, 1]).must_equal 0
+
+    @c.compare_sub_qualitites([1, 2], [1, 3]).must_equal 0
+    @c.compare_sub_qualitites([1, 3], [1, 2]).must_equal 0
+
+    @c.compare_sub_qualitites([1, 1.9], [1, 3]).must_equal -1
+    @c.compare_sub_qualitites([1, 3.1], [1, 2]).must_equal 1
+
+    @c.compare_sub_qualitites([2, -1], [4, -1]).must_equal -1
+    @c.compare_sub_qualitites([4, -1], [2, -1]).must_equal 1
+
+    @c.compare_sub_qualitites([1, 2], [2, 1]).must_equal 0
+
+    @c.compare_sub_qualitites([1, 3], [2, 1]).must_equal 1
   end
 end
