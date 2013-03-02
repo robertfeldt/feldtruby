@@ -122,6 +122,10 @@ class SearchSpace
 		end
 	end
 
+	# LatinHypercube sampling is a stratified random sampling in bins over the search space. It is a simple
+	# way to ensure a more even spread over the search space when sampling. It has shown to be generally 
+	# useful for seeding initial populations in population based search without requiring any fitness
+	# evaluations. For example used in Deb's OmniOptimizer and in Tiwari's AMGA2 etc.
 	class LatinHypercubeSampler < SetSampler
 		# Sample the latin hypercube evenly for each dimension in the search space and then
 		# use Knuth unbiased shuffling to create individuals from the evenly spread out samples.
