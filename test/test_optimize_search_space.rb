@@ -50,6 +50,52 @@ describe "SearchSpace#bound" do
 	end
 end
 
+describe "LatinHypercubeSampler" do
+	before do
+		@sampler = FeldtRuby::Optimize::SearchSpace::LatinHypercubeSampler.new
+		@sp = FeldtRuby::Optimize::SearchSpace.new([0, 2], [1, 5], @sampler)
+	end
+
+	it "has been linked up to the search space" do
+		@sampler.search_space.must_equal @sp
+	end
+
+	it "can generate a set of two valid candidates from a search space" do
+		100.times do
+			set = @sampler.sample_candidates(2)
+			set.must_be_instance_of Array
+			set.length.must_equal 2
+			c1, c2 = set
+			if c1[0] < 0.5
+				c2[0].must_be :>=, 0.5
+				c1[0].must_be :>=, 0.0
+			else
+				c2[0].must_be :<, 0.5
+				c1[0].must_be :<, 1.0
+			end
+			if c1[1] < 3.5
+				c2[1].must_be :>=, 3.5
+				c1[1].must_be :>=, 2.0
+			else
+				c2[1].must_be :<, 3.5
+				c1[1].must_be :<, 5.0
+			end
+		end
+	end
+
+	it "can generate a single candidate" do
+		100.times do
+			c = @sampler.sample_candidate
+			c.must_be_instance_of Array
+			c.length.must_equal 2
+			c[0].must_be :>=, 0.0
+			c[0].must_be :<, 1.0
+			c[1].must_be :>=, 2.0
+			c[1].must_be :<, 5.0
+		end
+	end
+end
+
 class TestSearchSpace < MiniTest::Unit::TestCase
 	def setup
 		@s1 = FeldtRuby::Optimize::SearchSpace.new([-5], [5])	
