@@ -1,6 +1,11 @@
 require 'feldtruby/array/basic_stats'
 
 class Array
+	def map_with_index(&block)
+		index = -1 # Start below zero since we pre-increment in the loop
+		self.map {|v| block.call(v,index+=1)}
+	end
+
 	# Calculate the distance between the elements.
 	def distance_between_elements
 		return nil if self.length == 0

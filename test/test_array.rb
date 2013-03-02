@@ -34,6 +34,12 @@ class TestFeldtRubyArray < MiniTest::Unit::TestCase
 end
 
 describe "Array extensions" do
+	describe "map_with_index" do
+		it "calls the block with both the value and an index" do
+			[1,2,3].map_with_index {|v,i| [v,i]}.must_equal [[1,0], [2,1], [3,2]]
+		end
+	end
+
 	describe "ranks" do
 		it "works when elements are already in order" do
 			[2.5, 1.5, 0.3].ranks.must_equal [1, 2, 3]
