@@ -60,7 +60,7 @@ describe "LatinHypercubeSampler" do
 		@sampler.search_space.must_equal @sp
 	end
 
-	it "can generate a set of two valid candidates from a search space" do
+	it "can generate a set of two valid candidates from a search space and they are properly spread out" do
 		100.times do
 			set = @sampler.sample_candidates(2)
 			set.must_be_instance_of Array
@@ -83,7 +83,7 @@ describe "LatinHypercubeSampler" do
 		end
 	end
 
-	it "can generate a single candidate" do
+	it "can generate a single candidate that are within the search space" do
 		100.times do
 			c = @sampler.sample_candidate
 			c.must_be_instance_of Array
@@ -92,6 +92,14 @@ describe "LatinHypercubeSampler" do
 			c[0].must_be :<, 1.0
 			c[1].must_be :>=, 2.0
 			c[1].must_be :<, 5.0
+		end
+	end
+
+	it "does not return the same candidate twice even if generating a single candidate" do
+		100.times do
+			c1 = @sampler.sample_candidate
+			c2 = @sampler.sample_candidate
+			c1.wont_equal c2
 		end
 	end
 end

@@ -61,8 +61,8 @@ class SearchSpace
 		@min_values.length
 	end
 
-	# A sampler generates a new candidate, or set of candidates, that is/are within a search space. This default
-	# sampler is uniform random over the whole search space.
+	# A sampler generates a new candidate (or set of candidates) that is (are) within a search space. 
+	# This default sampler does uniform random sampling over the whole search space.
 	class Sampler
 		attr_accessor :search_space
 
@@ -70,7 +70,7 @@ class SearchSpace
 			self.search_space = searchSpace
 		end
 
-		# Randomly sample a valid value for a given dimension index in the search space.
+		# Random uniform sampling of a valid value for a given dimension _index_ in the search space.
 		def sample_value_for_dimension(index)
 			min, delta = search_space.min_values[index], search_space.deltas[index]
 			min + delta * rand()
@@ -90,11 +90,11 @@ class SearchSpace
 	end
 
 	# Set samplers sample many candidates in one go, often to create a better "spread" of genotypes within
-	# the search space.
+	# the search space. This is an abstract base class so sub-classes ust override the sample_candidates method.
 	class SetSampler < Sampler
 		# The chunk size is the number of candidates that are generated in one go and from which the individual
-		# candidates are then taken. Default is 100 to get a nice spread.
-		def initialize(chunkSize = 100)
+		# candidates are then taken. Default is 200 to get a nice initial spread.
+		def initialize(chunkSize = 200)
 			@chunk_size = chunkSize
 			@chunk = []
 		end
