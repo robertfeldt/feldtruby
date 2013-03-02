@@ -25,7 +25,7 @@ end
 # A MinMaxAveragePerPositionArchive keeps the min, max and average values for each
 # position in the supplied arrays. It can thus be used for min-max-normalization
 # of values in each position.
-class MinMaxAveragePerPositionArchive < PositionBasedValueArchive
+class MinMaxMeanPerPositionArchive < PositionBasedValueArchive
   attr_reader :mins, :maxs
 
   def initialize
