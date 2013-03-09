@@ -153,6 +153,54 @@ module Statistics
   end
 end
 
+# Plotting data sets in R with ggplot2 and save them to files.
+module FeldtRuby::Statistics::Plotting
+
+  def plot_2dims(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", width = 1200, height = 900)
+
+    include_library("ggplot2")
+
+    pre = [
+      "td <- read.csv(#{csvFilePath.inspect}",
+      "png(#{graphFilePath.inspect}, width=#{width}, height=#{height})"
+    ]
+
+    plot = yield()
+    plot.last << " theme_bw(base_size = 12, base_family = \"\")"
+
+    post = [
+      "dev.off()"
+    ]
+
+    lines = pre + plot + post
+    eval lines.join("\n")
+
+  end
+
+  # Scatter plot of columns xName vs yName in csvFilePath is saved to graphFilePath.
+  def scatter_plot(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", smoothFit = true, width = 1200, height = 900)
+    plot_2dims(csvFilePath, graphFilePath, xName, yName, title, width, height) {
+      [
+        "ggplot(td, aes(#{xName}, #{yName})) + ",
+        "  geom_point(shape = 1) + ", # Each point is non-filled circle
+        (smoothFit ? "  geom_smooth() + " : nil),
+        "  ggtitle(#{title.inspect})"
+      ].compact
+    }
+  end
+
+  # Scatter plot of columns xName vs yName in csvFilePath is saved to graphFilePath.
+  def hexbin_heatmap(csvFilePath, graphFilePath, xName, yName, title = "heatmap", bins = 30, width = 1200, height = 900)
+    plot_2dims(csvFilePath, graphFilePath, xName, yName, title, width, height) {
+      [ "ggplot(td, aes(#{xName}, #{yName})) + geom_hex( bins = #{bins} ) + ggtitle(\"#{title}\")"]
+    }
+  end
+end
+
+class FeldtRuby::Statistics::RCommunicator
+  include FeldtRuby::Statistics::Plotting
+end
+
 # Make them available at top level
 extend Statistics
 
