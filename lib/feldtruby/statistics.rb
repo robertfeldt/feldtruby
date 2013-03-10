@@ -197,7 +197,7 @@ module FeldtRuby::Statistics::Plotting
   end
 end
 
-class FeldtRuby::Statistics::RCommunicator
+class FeldtRuby::RCommunicator
   include FeldtRuby::Statistics::Plotting
 end
 
