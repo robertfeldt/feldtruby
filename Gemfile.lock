@@ -3,12 +3,14 @@ PATH
   specs:
     feldtruby (0.3.11)
       json
+      nokogiri
       rinruby
 
 GEM
   remote: https://rubygems.org/
   specs:
     json (1.7.7)
+    nokogiri (1.5.6)
     rinruby (2.0.3)
 
 PLATFORMS

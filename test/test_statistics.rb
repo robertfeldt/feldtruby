@@ -100,32 +100,89 @@ end
 
 describe "Plotting" do
 
-  it "can do a scatter plot" do
+  it "can map Ruby integers to R code/script strings" do
 
-    d = File.dirname(__FILE__) + "/"
-    filename = d + "tmp.csv"
-    out = d + "scatterplot.pdf"
-    RC.scatter_plot(filename, out, "size", "height", 
-      "Scatterplot", true)
-
-    File.exist?(out).must_equal true
-
-    File.delete out
+    RC.ruby_object_to_R_string(1).must_equal "1"
+    RC.ruby_object_to_R_string(42).must_equal "42"
 
   end
 
-  it "can do a hexbin heatmap plot" do
+  it "can map Ruby floats to R code/script strings" do
 
-    d = File.dirname(__FILE__) + "/"
-    filename = d + "tmp.csv"
-    out = d + "heatmap.pdf"
+    RC.ruby_object_to_R_string(3.675).must_equal "3.675"
+    RC.ruby_object_to_R_string(1e10).must_equal "10000000000.0"
 
-    RC.hexbin_heatmap(filename, out, "size", "height", 
-      "Hexbin heatmap", 30)
+  end
+
+  it "can map Ruby arrays to R code/script strings" do
+
+    RC.ruby_object_to_R_string([1,2,3]).must_equal "c(1, 2, 3)"
+    RC.ruby_object_to_R_string([10, 1.65]).must_equal "c(10, 1.65)"
+
+  end
+
+  it "can map Ruby strings to R code/script strings" do
+
+    RC.ruby_object_to_R_string("loess").must_equal '"loess"'
+    RC.ruby_object_to_R_string("gam").must_equal '"gam"'
+
+  end
+
+  it "can convert a hash of Ruby objects into a R parameter script" do
+
+    RC.hash_to_R_params({:a => 1, :b => 42.5}).must_equal "a = 1, b = 42.5"
+
+    s = RC.hash_to_R_params({:b => "b", :height => [5, 7.2]})
+    s.must_equal 'b = "b", height = c(5, 7.2)'
+
+  end
+
+  it "can change the file ending if is not what is expected" do
+
+  end
+
+#  it "can do a scatter plot" do
+#
+#    d = File.dirname(__FILE__) + "/"
+#    filename = d + "tmp.csv"
+#    out = d + "scatterplot.pdf"
+#    RC.scatter_plot(filename, out, "size", "height", 
+#      "Scatterplot", true)
+#
+#    File.exist?(out).must_equal true
+#
+#    File.delete out
+#
+#  end
+#
+#  it "can do a hexbin heatmap plot" do
+#
+#    d = File.dirname(__FILE__) + "/"
+#    filename = d + "tmp.csv"
+#    out = d + "heatmap.pdf"
+#
+#    RC.hexbin_heatmap(filename, out, "size", "height", 
+#      "Hexbin heatmap", 30)
+#
+#    File.exist?(out).must_equal true
+#
+#    File.delete out
+#
+#  end
+
+  it "can do overlaid density plot" do
+
+    d1 = Array.new(100) {rand(10)}
+    d2 = Array.new(100) {2 + rand(5)}
+
+    out = "tmp.pdf"
+
+    RC.save_graph(out) do
+      RC.overlaid_densities(d1, d2)
+    end
 
     File.exist?(out).must_equal true
-
     File.delete out
-
+    
   end
 end

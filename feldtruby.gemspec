@@ -18,5 +18,8 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
 
   gem.add_dependency('rinruby')
+
   gem.add_dependency('json')
+
+  gem.add_dependency('nokogiri')
 end

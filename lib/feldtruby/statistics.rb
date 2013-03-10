@@ -39,6 +39,21 @@ class RCommunicator
     @r.eval str
   end
 
+  # Given a script that has variable references in the form "_name_" insert
+  # the ruby objects mapped from these names in scriptNameToRubyValues
+  def subst_eval(script, scriptNameToRubyValues)
+
+    scriptNameToRubyValues.each do |key, value|
+
+      script = script.gsub("_#{key.to_s}_", ruby_object_to_R_string(value))
+
+    end
+
+    #puts "Eval'ing script:\n#{script}"
+    eval script
+
+  end
+
   # This represents a hash returned as JSON from R but mapped to a
   # Ruby object so we can more easily use it as if it was an R object.
   class Rvalue
@@ -83,6 +98,32 @@ class RCommunicator
         Kernel::Float(res)
       end
     end
+  end
+
+  # Convert a Ruby object of one of the types String, Array, Integer or Float
+  # to a String that can be used in R code/scripts to represent the object.
+  def ruby_object_to_R_string(o)
+
+      case o
+
+      when String
+        return o.inspect
+
+      when Array
+        elems = o.map {|e| ruby_object_to_R_string(e)}.join(", ")
+        return "c(#{elems})"
+
+      when Integer
+        return o.to_s
+
+      when Float
+        return o.to_s
+
+      else
+        raise "Cannot represent object #{o} in valid R code"
+
+      end
+
   end
 
   private
@@ -156,7 +197,51 @@ end
 # Plotting data sets in R with ggplot2 and save them to files.
 module FeldtRuby::Statistics::Plotting
 
-  def plot_2dims(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", format = "pdf", width = 7, height = 5)
+  GfxFormatToGfxParams = {
+    "pdf" => {:width => 7, :height => 5, :paper => 'special'},
+    "png" => {:units => "cm", :width => 12, :height => 8},
+    "tiff" => {:units => "cm", :width => 12, :height => 8},
+  }
+
+  def gfx_device(format, width = nil, height = nil)
+
+    format = format.to_s            # If given as a symbol instead of a string
+
+    unless GfxFormatToGfxParams.has_key?(format)
+      raise ArgumentError.new("Don't now about gfx format #{format}")
+    end
+
+    params = GfxFormatToGfxParams[format]
+
+    "#{format}(#{hash_to_R_params(params)})"
+
+  end
+
+  # Map a ruby hash of objects to parameters in R code/script.
+  def hash_to_R_params(hash)
+
+    hash.keys.sort.map do |key|
+
+      "#{key.to_s} = #{ruby_object_to_R_string(hash[key])}"
+
+    end.join(", ")
+
+  end
+
+  def set_file_ending(filepath, newEnding)
+
+    dirname = File.dirname(filepath)
+
+    current_ending = filepath.split(".").last
+
+    # Works even if there is no current file ending:
+    basename = File.basename(filepath, "." + current_ending)
+
+    File.join dirname, basename
+
+  end
+
+  def plot_2dims(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", format = "pdf", width = nil, height = nil)
 
     include_library("ggplot2")
 
@@ -164,13 +249,13 @@ module FeldtRuby::Statistics::Plotting
 
     pre = [
       "data <- read.csv(#{csvFilePath.inspect})",
-      "#{format}(#{gfxFile.inspect}, width=#{width}, height=#{height})"
+      gfx_device(format, width, height)
     ]
 
     #plot = ["suppressWarnings( " + yield().join(" ") + " + theme_bw(base_size = 12, base_family = \"\") )"]
-    plot = [yield().join(" ") + " + theme_bw(base_size = 12, base_family = \"\")"]
-    #plot = yield()
-    #plot << " + theme_bw(base_size = 16, base_family = \"\")"
+    #plot = [yield().join(" ") + " + theme_bw(base_size = 12, base_family = \"\")"]
+    plot = yield()
+    plot << " + theme_bw(base_size = 12, base_family = \"\")"
 
     post = [
       "dev.off()"
@@ -182,12 +267,13 @@ module FeldtRuby::Statistics::Plotting
   end
 
   # Scatter plot of columns xName vs yName in csvFilePath is saved to graphFilePath.
-  def scatter_plot(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", smoothFit = true, format = "pdf", width = 7, height = 5)
+  def scatter_plot(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", smoothFit = true, format = nil, width = 7, height = 5)
     plot_2dims(csvFilePath, graphFilePath, xName, yName, title, format, width, height) {
       [
+        "smoothing_method <- if(nrow(data) > 1000) {'gam'} else {'loess'}",
         "ggplot(data, aes(#{xName}, #{yName})) + ",
         "  geom_point(shape = 1) + ", # Each point is non-filled circle
-        (smoothFit ? "  geom_smooth() + " : nil),
+        (smoothFit ? "  geom_smooth(method = smoothing_method) + " : nil),
         "  ggtitle(#{title.inspect})"
       ].compact
     }
@@ -198,6 +284,39 @@ module FeldtRuby::Statistics::Plotting
     plot_2dims(csvFilePath, graphFilePath, xName, yName, title, format, width, height) {
       [ "ggplot(data, aes(#{xName}, #{yName})) + geom_hex( bins = #{bins} ) + ggtitle(\"#{title}\")"]
     }
+  end
+
+  # This is wrapped around a block that draws a diagram and will save that diagram
+  # to the given filename.
+  def save_graph(filename)
+    RC.eval("pdf(#{filename.inspect}, width = 6, height = 4, paper = 'special')")
+    yield() # Just be sure not to nest these save_graph calls within each other...
+    RC.eval("dev.off()")
+  end
+
+  # Overlaid density graph of the observations (sampled distributions) in data1
+  # and data2.
+  def overlaid_densities(data1, data2, xlabel = "x", ylabel = "density")
+    include_library("ggplot2")
+
+    raise ArgumentError.new("Must have same cardinality") unless data1.length == data2.length
+
+    script = <<-EOS
+      df <- data.frame(dc1 = _d1_, dc2 = _d2_)
+      f <- ggplot(df)
+      f <- f + geom_density(aes(dc1, fill = "blue"), alpha = 0.2)
+      f <- f + geom_density(aes(dc2, fill = "red"), alpha = 0.2)
+      f <- f + theme_bw() + ggtitle("Overlaid densities")
+      f <- f + theme(plot.title = element_text(face="bold", size=12), 
+       axis.title.x = element_text(face="bold", size=10)
+      ) + xlab(_xlabel_)
+      # pdf("tmp.pdf", width = 6, height = 4, paper='special')
+      f
+      #dev.off()
+    EOS
+    subst_eval script, {:d1 => data1, :d2 => data2, 
+      :xlabel => xlabel, :ylabel => ylabel}
+
   end
 end
 
