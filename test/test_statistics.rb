@@ -170,19 +170,20 @@ describe "Plotting" do
 #
 #  end
 
-  it "can do overlaid density plot" do
+  it "can do overlaid density plot of three arrays" do
 
     d1 = Array.new(100) {rand(10)}
-    d2 = Array.new(100) {2 + rand(5)}
+    d2 = Array.new(100) {2 + rand(6)}
+    g = Array.new(100) {1 + rand(12)}
 
-    out = "tmp.pdf"
+    out = "tmp2.pdf"
 
     RC.save_graph(out) do
-      RC.overlaid_densities(d1, d2)
+      RC.overlaid_densities({:ind1 => d1, :ind2 => d2, :goal => g})
     end
 
     File.exist?(out).must_equal true
     File.delete out
-    
+
   end
 end

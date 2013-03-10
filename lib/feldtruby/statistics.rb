@@ -13,7 +13,11 @@ class RCommunicator
     # Will stay open until closed or the ruby interpreter exits.
     # echo = false and interactive = false
     @r = RinRuby.new(false, false)
+
+    @installed_libraries = []
+
     setup_r()
+
   end
 
   # Include necessary libraries.
@@ -23,7 +27,13 @@ class RCommunicator
 
   # Include a library after ensuring it has been installed
   def include_library(lib)
+
+    return if @installed_libraries.include?(lib)
+
+    @installed_libraries << lib
+
     @r.eval "if(!library(#{lib}, logical.return=TRUE)) {install.packages(\"#{lib}\"); library(#{lib});}"
+
   end
 
   # Load R scripts in the feldtruby/R directory.
@@ -197,12 +207,6 @@ end
 # Plotting data sets in R with ggplot2 and save them to files.
 module FeldtRuby::Statistics::Plotting
 
-  GfxFormatToGfxParams = {
-    "pdf" => {:width => 7, :height => 5, :paper => 'special'},
-    "png" => {:units => "cm", :width => 12, :height => 8},
-    "tiff" => {:units => "cm", :width => 12, :height => 8},
-  }
-
   def gfx_device(format, width = nil, height = nil)
 
     format = format.to_s            # If given as a symbol instead of a string
@@ -225,19 +229,6 @@ module FeldtRuby::Statistics::Plotting
       "#{key.to_s} = #{ruby_object_to_R_string(hash[key])}"
 
     end.join(", ")
-
-  end
-
-  def set_file_ending(filepath, newEnding)
-
-    dirname = File.dirname(filepath)
-
-    current_ending = filepath.split(".").last
-
-    # Works even if there is no current file ending:
-    basename = File.basename(filepath, "." + current_ending)
-
-    File.join dirname, basename
 
   end
 
@@ -286,38 +277,71 @@ module FeldtRuby::Statistics::Plotting
     }
   end
 
-  # This is wrapped around a block that draws a diagram and will save that diagram
-  # to the given filename.
-  def save_graph(filename)
-    RC.eval("pdf(#{filename.inspect}, width = 6, height = 4, paper = 'special')")
+  GfxFormatToGfxParams = {
+    "pdf" => {:width => 7, :height => 5, :paper => 'special'},
+    "png" => {:units => "cm", :width => 12, :height => 8},
+    "tiff" => {:units => "cm", :width => 12, :height => 8},
+  }
+
+  # Wrap a sve_graph call around a block that draws a diagram and this will 
+  # save the diagram to a file. The filetype is given by the file ending of
+  # the file name.
+  def save_graph(filename, width = nil, height = nil)
+
+    file_ending = filename.split(".").last
+
+    raise "Don't now about graphics format #{file_ending}" unless GfxFormatToGfxParams.has_key?(file_ending)
+
+    params = GfxFormatToGfxParams[file_ending].clone
+
+    params[:width] = width if width
+    params[:height] = height if height
+
+    RC.eval("#{file_ending}(#{filename.inspect}, #{hash_to_R_params(params)})")
+
     yield() # Just be sure not to nest these save_graph calls within each other...
+
     RC.eval("dev.off()")
+
   end
 
   # Overlaid density graph of the observations (sampled distributions) in data1
-  # and data2.
-  def overlaid_densities(data1, data2, xlabel = "x", ylabel = "density")
-    include_library("ggplot2")
+  # and data2. The _dataMap_ maps the name of each data series to an array with
+  # its observations.
+  def overlaid_densities(dataMap, title = "Densities of distributions", datasetsName = "distribution", xlabel = "values", ylabel = "density")
 
-    raise ArgumentError.new("Must have same cardinality") unless data1.length == data2.length
+    include_library("ggplot2")
+    include_library("reshape2")
+
+    cardinalities = dataMap.values.map {|vs| vs.length}.uniq
+
+    unless cardinalities.length == 1
+
+      raise ArgumentError.new("Must have same cardinality")
+
+    end
 
     script = <<-EOS
-      df <- data.frame(dc1 = _d1_, dc2 = _d2_)
-      f <- ggplot(df)
-      f <- f + geom_density(aes(dc1, fill = "blue"), alpha = 0.2)
-      f <- f + geom_density(aes(dc2, fill = "red"), alpha = 0.2)
-      f <- f + theme_bw() + ggtitle("Overlaid densities")
-      f <- f + theme(plot.title = element_text(face="bold", size=12), 
-       axis.title.x = element_text(face="bold", size=10)
-      ) + xlab(_xlabel_)
-      # pdf("tmp.pdf", width = 6, height = 4, paper='special')
+      df <- data.frame(index = (1:#{cardinalities.first}), #{hash_to_R_params(dataMap)})
+      df.m <- melt(df, id = "index")
+      names(df.m)[2] <- _datasetsName_
+      f <- ggplot(df.m, aes(value, fill=#{datasetsName}))
+      f <- f + geom_density(alpha = 0.2, size = 0.5) + scale_color_brewer()
+      f <- f + ggtitle(_title_) + xlab(_xlabel_) + ylab(_ylabel_)
+      f <- f + theme_bw()
+      f <- f + theme(
+              plot.title = element_text(face="bold", size=12), 
+              axis.title.x = element_text(face="bold", size=10),
+              axis.title.y = element_text(face="bold", size=10)
+            )
       f
-      #dev.off()
     EOS
-    subst_eval script, {:d1 => data1, :d2 => data2, 
+
+    subst_eval script, {:title => title, :datasetsName => datasetsName,
       :xlabel => xlabel, :ylabel => ylabel}
 
   end
+
 end
 
 class FeldtRuby::RCommunicator
