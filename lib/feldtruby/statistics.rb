@@ -156,17 +156,21 @@ end
 # Plotting data sets in R with ggplot2 and save them to files.
 module FeldtRuby::Statistics::Plotting
 
-  def plot_2dims(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", width = 1200, height = 900)
+  def plot_2dims(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", format = "pdf", width = 7, height = 5)
 
     include_library("ggplot2")
 
+    gfxFile = File.dirname(graphFilePath) + "/" + File.basename(graphFilePath, "." + format) + "." + format
+
     pre = [
-      "td <- read.csv(#{csvFilePath.inspect}",
-      "png(#{graphFilePath.inspect}, width=#{width}, height=#{height})"
+      "data <- read.csv(#{csvFilePath.inspect})",
+      "#{format}(#{gfxFile.inspect}, width=#{width}, height=#{height})"
     ]
 
-    plot = yield()
-    plot.last << " theme_bw(base_size = 12, base_family = \"\")"
+    #plot = ["suppressWarnings( " + yield().join(" ") + " + theme_bw(base_size = 12, base_family = \"\") )"]
+    plot = [yield().join(" ") + " + theme_bw(base_size = 12, base_family = \"\")"]
+    #plot = yield()
+    #plot << " + theme_bw(base_size = 16, base_family = \"\")"
 
     post = [
       "dev.off()"
@@ -178,10 +182,10 @@ module FeldtRuby::Statistics::Plotting
   end
 
   # Scatter plot of columns xName vs yName in csvFilePath is saved to graphFilePath.
-  def scatter_plot(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", smoothFit = true, width = 1200, height = 900)
-    plot_2dims(csvFilePath, graphFilePath, xName, yName, title, width, height) {
+  def scatter_plot(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", smoothFit = true, format = "pdf", width = 7, height = 5)
+    plot_2dims(csvFilePath, graphFilePath, xName, yName, title, format, width, height) {
       [
-        "ggplot(td, aes(#{xName}, #{yName})) + ",
+        "ggplot(data, aes(#{xName}, #{yName})) + ",
         "  geom_point(shape = 1) + ", # Each point is non-filled circle
         (smoothFit ? "  geom_smooth() + " : nil),
         "  ggtitle(#{title.inspect})"
@@ -190,9 +194,9 @@ module FeldtRuby::Statistics::Plotting
   end
 
   # Scatter plot of columns xName vs yName in csvFilePath is saved to graphFilePath.
-  def hexbin_heatmap(csvFilePath, graphFilePath, xName, yName, title = "heatmap", bins = 30, width = 1200, height = 900)
-    plot_2dims(csvFilePath, graphFilePath, xName, yName, title, width, height) {
-      [ "ggplot(td, aes(#{xName}, #{yName})) + geom_hex( bins = #{bins} ) + ggtitle(\"#{title}\")"]
+  def hexbin_heatmap(csvFilePath, graphFilePath, xName, yName, title = "heatmap", bins = 30, format = "pdf", width = 7, height = 5)
+    plot_2dims(csvFilePath, graphFilePath, xName, yName, title, format, width, height) {
+      [ "ggplot(data, aes(#{xName}, #{yName})) + geom_hex( bins = #{bins} ) + ggtitle(\"#{title}\")"]
     }
   end
 end

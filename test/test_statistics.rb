@@ -89,11 +89,43 @@ require 'feldtruby/minitest_extensions'
 describe "Test Statistics but with the extensions to MiniTest framework" do
   it "can use assert_same_proportions" do
     assert_similar_proportions( [1]*10 + [2]*10 )
-    # This should fail but I found now way to test it since it uses the MiniTest framework itself...
+    # This should fail but I found no way to test it since it uses the MiniTest framework itself...
     # assert_similar_proportions( [1]*60 + [2]*40 )
   end
 
   it "can use must_have_similar_proportions" do
     ([1]*10 + [2]*10).must_have_similar_proportions
+  end
+end
+
+describe "Plotting" do
+
+  it "can do a scatter plot" do
+
+    d = File.dirname(__FILE__) + "/"
+    filename = d + "tmp.csv"
+    out = d + "scatterplot.pdf"
+    RC.scatter_plot(filename, out, "size", "height", 
+      "Scatterplot", true)
+
+    File.exist?(out).must_equal true
+
+    File.delete out
+
+  end
+
+  it "can do a hexbin heatmap plot" do
+
+    d = File.dirname(__FILE__) + "/"
+    filename = d + "tmp.csv"
+    out = d + "heatmap.pdf"
+
+    RC.hexbin_heatmap(filename, out, "size", "height", 
+      "Hexbin heatmap", 30)
+
+    File.exist?(out).must_equal true
+
+    File.delete out
+
   end
 end
