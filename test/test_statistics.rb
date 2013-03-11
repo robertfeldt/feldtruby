@@ -154,7 +154,7 @@ describe "Plotting" do
 
     File.exist?(out).must_equal true
 
-    #File.delete out
+    File.delete out
 
   end
 

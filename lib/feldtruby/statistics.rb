@@ -110,14 +110,18 @@ class RCommunicator
     end
   end
 
-  # Convert a Ruby object of one of the types String, Array, Integer or Float
-  # to a String that can be used in R code/scripts to represent the object.
+  # Convert a Ruby object of one of the types String, Symbol, Array, Integer 
+  # or Float to a String that can be used in R code/scripts to 
+  # represent the object.
   def ruby_object_to_R_string(o)
 
       case o
 
       when String
         return o.inspect
+
+      when Symbol
+        return o.to_s
 
       when Array
         elems = o.map {|e| ruby_object_to_R_string(e)}.join(", ")
@@ -246,9 +250,38 @@ module FeldtRuby::Statistics::Plotting
 
   end
 
-  def hexbin_heatmap(csvFilePath, xlabel, ylabel, title = "heatmap", bins = 20)
+  def filled_contour(csvFilePath, xlabel, ylabel, title = "filled.contour")
+    include_library "MASS"
+    #include_library "ggplot2"
+
+    script = <<-EOS
+      data <- read.csv(#{csvFilePath.inspect})
+      k <- with(data, MASS::kde2d(#{xlabel}, #{ylabel}))
+      f <- filled.contour(k, color=topo.colors, 
+             plot.title=title(main = _title_),
+             xlab=_xlabel_, ylab=_ylabel_)
+      f
+    EOS
+
+    subst_eval script, {:title => title,
+      :xlabel => xlabel.to_s, :ylabel => ylabel.to_s}
+
+  end
+
+  def smooth_scatter_plot(csvFilePath, xlabel, ylabel, title = "smoothscatter")
+    include_library "graphics"
+
+    script = <<-EOS
+      f <- ggplot(data, aes(#{xlabel}, #{ylabel})) +
+             geom_point() + geom_smooth( method="loess", se = FALSE )
+    EOS
+
+    plot_2dims(csvFilePath, script, xlabel.to_s, ylabel.to_s, title)
+  end
+
+  def hexbin_heatmap(csvFilePath, xlabel, ylabel, title = "heatmap", bins = 50)
     plot_2dims(csvFilePath,
-      "f <- ggplot(data, aes(#{ylabel}, #{ylabel})) + geom_hex( bins = #{bins} )",
+      "f <- ggplot(data, aes(#{xlabel}, #{ylabel})) + geom_hex( bins = #{bins} )",
       xlabel, ylabel, title)
   end
 
@@ -260,7 +293,7 @@ module FeldtRuby::Statistics::Plotting
       f <- f + stat_smooth()
     EOS
 
-    plot_2dims(csvFilePath, script, xlabel, ylabel, title)
+    plot_2dims(csvFilePath, script, xlabel.to_s, ylabel.to_s, title)
 
   end
 
