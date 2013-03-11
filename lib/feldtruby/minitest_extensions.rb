@@ -20,6 +20,14 @@ module MiniTest::Assertions
   end
 end
 
+NumTestRepetitions = 50
+
+def repeatedly_it(message, &testcode)
+  NumTestRepetitions.times do |i|
+    it("#{i}: " + message, &testcode)
+  end
+end
+
 module MiniTest::Expectations
   infect_an_assertion :assert_similar_proportions, :must_have_similar_proportions
   infect_an_assertion :assert_falsey, :must_be_falsey
