@@ -232,29 +232,26 @@ module FeldtRuby::Statistics::Plotting
 
   end
 
-  def plot_2dims(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", format = "pdf", width = nil, height = nil)
+  def plot_2dims(csvFilePath, plotCommand, xlabel, ylabel, title = "scatterplot")
 
-    include_library("ggplot2")
+    script = <<-EOS
+      data <- read.csv(#{csvFilePath.inspect})
+      #df.m <- melt(df, id = "index")
+      #names(df.m)[2] <- _datasetsName_
+      #{plotCommand}
+      #{ggplot2_setup_and_theme()}
+      f
+    EOS
 
-    gfxFile = File.dirname(graphFilePath) + "/" + File.basename(graphFilePath, "." + format) + "." + format
+    subst_eval script, {:title => title,
+      :xlabel => xlabel, :ylabel => ylabel}
 
-    pre = [
-      "data <- read.csv(#{csvFilePath.inspect})",
-      gfx_device(format, width, height)
-    ]
+  end
 
-    #plot = ["suppressWarnings( " + yield().join(" ") + " + theme_bw(base_size = 12, base_family = \"\") )"]
-    #plot = [yield().join(" ") + " + theme_bw(base_size = 12, base_family = \"\")"]
-    plot = yield()
-    plot << " + theme_bw(base_size = 12, base_family = \"\")"
-
-    post = [
-      "dev.off()"
-    ]
-
-    lines = pre + plot + post
-    eval lines.join("\n")
-
+  def hexbin_heatmap(csvFilePath, xName, yName, title = "heatmap", bins = 20)
+    plot_2dims(csvFilePath,
+      "f <- ggplot(data, aes(#{xName}, #{yName})) + geom_hex( bins = #{bins} )",
+      xName, yName, title)
   end
 
   # Scatter plot of columns xName vs yName in csvFilePath is saved to graphFilePath.
@@ -267,13 +264,6 @@ module FeldtRuby::Statistics::Plotting
         (smoothFit ? "  geom_smooth(method = smoothing_method) + " : nil),
         "  ggtitle(#{title.inspect})"
       ].compact
-    }
-  end
-
-  # Scatter plot of columns xName vs yName in csvFilePath is saved to graphFilePath.
-  def hexbin_heatmap(csvFilePath, graphFilePath, xName, yName, title = "heatmap", bins = 30, format = "pdf", width = 7, height = 5)
-    plot_2dims(csvFilePath, graphFilePath, xName, yName, title, format, width, height) {
-      [ "ggplot(data, aes(#{xName}, #{yName})) + geom_hex( bins = #{bins} ) + ggtitle(\"#{title}\")"]
     }
   end
 
@@ -305,13 +295,27 @@ module FeldtRuby::Statistics::Plotting
 
   end
 
+  def ggplot2_setup_and_theme
+
+    include_library("ggplot2")
+    include_library("reshape2")
+
+    script = <<-EOS
+      f <- f + ggtitle(_title_) + xlab(_xlabel_) + ylab(_ylabel_)
+      f <- f + theme_bw()
+      f <- f + theme(
+              plot.title = element_text(face="bold", size=12), 
+              axis.title.x = element_text(face="bold", size=10),
+              axis.title.y = element_text(face="bold", size=10)
+            )
+    EOS
+
+  end
+
   # Overlaid density graph of the observations (sampled distributions) in data1
   # and data2. The _dataMap_ maps the name of each data series to an array with
   # its observations.
   def overlaid_densities(dataMap, title = "Densities of distributions", datasetsName = "distribution", xlabel = "values", ylabel = "density")
-
-    include_library("ggplot2")
-    include_library("reshape2")
 
     cardinalities = dataMap.values.map {|vs| vs.length}.uniq
 
@@ -327,13 +331,7 @@ module FeldtRuby::Statistics::Plotting
       names(df.m)[2] <- _datasetsName_
       f <- ggplot(df.m, aes(value, fill=#{datasetsName}))
       f <- f + geom_density(alpha = 0.2, size = 0.5) + scale_color_brewer()
-      f <- f + ggtitle(_title_) + xlab(_xlabel_) + ylab(_ylabel_)
-      f <- f + theme_bw()
-      f <- f + theme(
-              plot.title = element_text(face="bold", size=12), 
-              axis.title.x = element_text(face="bold", size=10),
-              axis.title.y = element_text(face="bold", size=10)
-            )
+      #{ggplot2_setup_and_theme()}
       f
     EOS
 

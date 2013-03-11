@@ -155,20 +155,23 @@ describe "Plotting" do
 #
 #  end
 #
-#  it "can do a hexbin heatmap plot" do
-#
-#    d = File.dirname(__FILE__) + "/"
-#    filename = d + "tmp.csv"
-#    out = d + "heatmap.pdf"
-#
-#    RC.hexbin_heatmap(filename, out, "size", "height", 
-#      "Hexbin heatmap", 30)
-#
-#    File.exist?(out).must_equal true
-#
-#    File.delete out
-#
-#  end
+  it "can do a hexbin heatmap plot" do
+
+    d = File.dirname(__FILE__) + "/"
+    filename = d + "tmp.csv"
+
+    out = "hexbin.pdf"
+
+    RC.save_graph(out) do
+      RC.hexbin_heatmap(filename, "size", "height", 
+        "Hexbin heatmap", 30)
+    end
+
+    File.exist?(out).must_equal true
+
+    File.delete out
+
+  end
 
   it "can do overlaid density plot of three arrays" do
 
