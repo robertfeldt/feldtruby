@@ -236,8 +236,6 @@ module FeldtRuby::Statistics::Plotting
 
     script = <<-EOS
       data <- read.csv(#{csvFilePath.inspect})
-      #df.m <- melt(df, id = "index")
-      #names(df.m)[2] <- _datasetsName_
       #{plotCommand}
       #{ggplot2_setup_and_theme()}
       f
@@ -248,23 +246,22 @@ module FeldtRuby::Statistics::Plotting
 
   end
 
-  def hexbin_heatmap(csvFilePath, xName, yName, title = "heatmap", bins = 20)
+  def hexbin_heatmap(csvFilePath, xlabel, ylabel, title = "heatmap", bins = 20)
     plot_2dims(csvFilePath,
-      "f <- ggplot(data, aes(#{xName}, #{yName})) + geom_hex( bins = #{bins} )",
-      xName, yName, title)
+      "f <- ggplot(data, aes(#{ylabel}, #{ylabel})) + geom_hex( bins = #{bins} )",
+      xlabel, ylabel, title)
   end
 
-  # Scatter plot of columns xName vs yName in csvFilePath is saved to graphFilePath.
-  def scatter_plot(csvFilePath, graphFilePath, xName, yName, title = "scatterplot", smoothFit = true, format = nil, width = 7, height = 5)
-    plot_2dims(csvFilePath, graphFilePath, xName, yName, title, format, width, height) {
-      [
-        "smoothing_method <- if(nrow(data) > 1000) {'gam'} else {'loess'}",
-        "ggplot(data, aes(#{xName}, #{yName})) + ",
-        "  geom_point(shape = 1) + ", # Each point is non-filled circle
-        (smoothFit ? "  geom_smooth(method = smoothing_method) + " : nil),
-        "  ggtitle(#{title.inspect})"
-      ].compact
-    }
+  def scatter_plot(csvFilePath, xlabel, ylabel, title = "scatterplot")
+
+    script = <<-EOS
+      # smoothing_method <- if(nrow(data) > 1000) {'gam'} else {'loess'}
+      f <- ggplot(data, aes(#{xlabel}, #{ylabel})) + geom_point(shape = 1)
+      f <- f + stat_smooth()
+    EOS
+
+    plot_2dims(csvFilePath, script, xlabel, ylabel, title)
+
   end
 
   GfxFormatToGfxParams = {

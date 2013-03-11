@@ -141,20 +141,23 @@ describe "Plotting" do
 
   end
 
-#  it "can do a scatter plot" do
-#
-#    d = File.dirname(__FILE__) + "/"
-#    filename = d + "tmp.csv"
-#    out = d + "scatterplot.pdf"
-#    RC.scatter_plot(filename, out, "size", "height", 
-#      "Scatterplot", true)
-#
-#    File.exist?(out).must_equal true
-#
-#    File.delete out
-#
-#  end
-#
+  it "can do a scatter plot" do
+
+    d = File.dirname(__FILE__) + "/"
+    filename = d + "tmp.csv"
+
+    out = "scatterplot.pdf"
+
+    RC.save_graph(out) do
+      RC.scatter_plot(filename, "size", "height", "Scatterplot")
+    end
+
+    File.exist?(out).must_equal true
+
+    #File.delete out
+
+  end
+
   it "can do a hexbin heatmap plot" do
 
     d = File.dirname(__FILE__) + "/"
