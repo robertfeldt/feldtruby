@@ -168,6 +168,10 @@ module Statistics
     res.p_value
   end
 
+  def correlation(ary1, ary2)
+    RC.call("cor", ary1, ary2)
+  end
+
   class DiffusionKDE
     attr_reader :densities, :mesh
 

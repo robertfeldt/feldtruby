@@ -82,6 +82,18 @@ describe "Statistics" do
       kde.densities[3].must_be_close_to 0.2728
     end
   end
+
+  describe "correlation between Ruby arrays" do
+
+    it "works for a simple example from the R doc for cor" do
+      correlation( (1..10).to_a, (2..11).to_a ).must_equal 1
+    end
+
+    it "works for the inverse of the simple example from the R doc for cor" do
+      correlation( (1..10).to_a, (-11..-2).to_a.reverse ).must_equal -1
+    end
+
+  end
 end
 
 require 'feldtruby/minitest_extensions'
