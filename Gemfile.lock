@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    feldtruby (0.3.11)
+    feldtruby (0.3.16)
       json
       nokogiri
       rinruby

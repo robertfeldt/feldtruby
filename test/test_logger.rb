@@ -94,3 +94,17 @@ describe 'Logger' do
   end
 
 end
+
+describe 'StatisticsLogger - A Logger that adds specific functions to log the value of a metric' do
+  before do
+    @sio = StringIO.new
+    @sl = FeldtRuby::StatisticsLogger.new @sio
+  end
+
+  it 'has a event count of 0 when no events has been logged' do
+
+    @sl.num_events.must_equal 0
+
+  end
+
+end

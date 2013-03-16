@@ -61,4 +61,12 @@ class Logger
   end
 end
 
+class StatisticsLogger < Logger
+  ValueChangeEvent = Struct.new(:value, :time_stamp)
+
+  def log_value value, eventType = nil
+    
+  end
+end
+
 end
