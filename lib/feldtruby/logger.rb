@@ -5,11 +5,26 @@ module FeldtRuby
 class Logger
   def initialize(io = STDOUT)
 
-    @io = io
+    @ios = []
+
+    add_io io
 
     # We save a unique array of events for each type.
     @events = Hash.new {|h,k| h[k] = Array.new}
 
+  end
+
+  # Add one more _io_ stream to which events are logged.
+  def add_io io
+
+    @ios << io
+    @ios.uniq
+
+  end
+
+  # Puts the given _str_ on the io stream.
+  def io_puts str
+    @ios.each {|io| io.puts str}
   end
 
   # Return the number of events of type _eventType_.
@@ -46,11 +61,6 @@ class Logger
 
   end
 
-  # Puts the given _str_ on the io stream.
-  def io_puts str
-    @io.puts str
-  end
-
   # Map a string and event type to a log string.
   def log_entry_description str, eventType = nil
 
@@ -65,7 +75,7 @@ class StatisticsLogger < Logger
   ValueChangeEvent = Struct.new(:value, :time_stamp)
 
   def log_value value, eventType = nil
-    
+
   end
 end
 

@@ -93,6 +93,18 @@ describe 'Logger' do
 
   end
 
+  it 'can log to multiple io streams' do
+
+    sio2 = StringIO.new
+    @l.add_io sio2
+
+    @l.log "a"
+
+    @sio.string.must_equal "a\n"
+    sio2.string.must_equal "a\n"
+
+  end
+
 end
 
 describe 'StatisticsLogger - A Logger that adds specific functions to log the value of a metric' do
