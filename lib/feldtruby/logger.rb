@@ -98,15 +98,35 @@ class Logger
 end
 
 class StatisticsLogger < Logger
-  def initialize(io = STDOUT)
+  # Get an array of values for a metric.
+  def values_for_metric metric
 
-    super
+    event_name = event_name_for_metric metric
 
-    @values = Hash.new {|h,k| h[k] = Array.new}
+    events(event_name).map {|e| e.data[:v]}
 
   end
 
-  def event_name_for_metric metric
+  # Return the current (latest) value for a given metric. Return nil if no
+  # value has been set.
+  def current_value(metric)
+    values_for_metric(metric).last
+  end
+
+  # Log a new value for the metric named _metric_.
+  def log_value newValue, metric = ""
+
+    old_value = current_value metric
+
+    save_event Event.new(event_name_for_metric(metric), {:v => newValue})
+
+    io_puts description_for_metric_change(newValue, old_value, metric)
+
+  end
+
+  private
+
+    def event_name_for_metric metric
     "metric_" + metric.to_s
   end
 
@@ -134,44 +154,6 @@ class StatisticsLogger < Logger
     else
       number.to_s
     end
-  end
-
-  # Get an array of values for a metric.
-  def values_for_metric metric
-    event_name = event_name_for_metric metric
-    events(event_name).map {|e| e.data[:v]}
-  end
-
-  # Return the current (latest) value for a given metric. Return nil if no
-  # value has been set.
-  def current_value(metric)
-
-    values = values_for_metric metric
-    return nil if values.length == 0
-    values.last
-
-  end
-
-  # Set the value of a metric.
-  def set_value newValue, metric
-    @values[metric] << newValue
-  end
-
-  # Log a new value for the metric named _metric_.
-  def log_value newValue, metric = ""
-
-    metric = metric
-
-    old_value = current_value metric
-
-    set_value newValue, metric
-
-    save_event Event.new(event_name_for_metric(metric), {:v => newValue})
-
-    description = description_for_metric_change(newValue, old_value, metric)
-
-    io_puts description
-
   end
 end
 
