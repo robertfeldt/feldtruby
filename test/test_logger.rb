@@ -119,4 +119,37 @@ describe 'StatisticsLogger - A Logger that adds specific functions to log the va
 
   end
 
+  it 'has no value for a metric without events' do
+
+    @sl.current_value(:fitness).must_equal nil
+
+  end
+
+  it 'updates the value when new values are logged' do
+
+    @sl.current_value(:Fitness).must_equal nil
+
+    @sl.log_value(1.0, :Fitness)
+
+    expected1 = "Fitness changed:  -> 1.000 (N/A), mean = 1.000 (min = 1.0, max = 1.0, median = 1.0, stdev = 0.00)\n"
+    @sio.string.must_equal expected1
+
+    @sl.current_value(:Fitness).must_equal 1.0
+
+    @sl.log_value(1.2, :Fitness)
+
+    @sl.current_value(:Fitness).must_equal 1.2
+
+    expected2 = "Fitness changed: 1.000 -> 1.200 (+20.0%), mean = 1.100 (min = 1.0, max = 1.2, median = 1.1, stdev = 0.10)\n"
+    @sio.string.must_equal( expected1 + expected2 )
+
+    @sl.log_value(0.9, :Fitness)
+
+    @sl.current_value(:Fitness).must_equal 0.9
+
+    expected3 = "Fitness changed: 1.200 -> 0.900 (-25.0%), mean = 1.033 (min = 0.9, max = 1.2, median = 1.0, stdev = 0.12)\n"
+    @sio.string.must_equal( expected1 + expected2 + expected3 )
+
+  end
+
 end
