@@ -131,6 +131,7 @@ module BasicStatistics
 
 	# Return summary stats for an array of numbers.
 	def summary_stats
+		return "" if length == 0
  		"%.3f (min = %.1f, max = %.1f, median = %.1f, stdev = %.2f)" % [mean, self.min, self.max, median, stdev]
  	end
 end
