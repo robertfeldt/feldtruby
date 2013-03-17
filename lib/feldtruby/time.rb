@@ -1,3 +1,22 @@
+class Time
+
+	# Number of milliseconds since Unix epoch.
+	def milli_seconds
+		(to_i * 1000) + (nsec / 1_000_000)
+	end
+
+	# Number of microseconds since Unix epoch.
+	def micro_seconds(time = Time.now)
+		(to_i * 1_000_000) + (nsec / 1_000)
+	end
+
+	# Number of nanoseconds since Unix epoch.
+	def nano_seconds(time = Time.now)
+		(to_i * 1_000_000_000) + nsec
+	end
+	
+end
+
 def Time.timestamp(options = {:short => false})
 	if options[:short]
 		Time.now.strftime("%y%m%d %H:%M.%S")

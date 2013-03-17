@@ -1,5 +1,27 @@
 require 'feldtruby/time'
 
+describe "Time#milli_seconds, micro_seconds and nano_seconds" do
+	it 'returns 0 for the unix epoch' do
+		Time.at(0).milli_seconds.must_equal 0
+
+		Time.at(0).micro_seconds.must_equal 0
+
+		Time.at(0).nano_seconds.must_equal 0
+	end
+
+	it 'works for specific time' do
+
+		Time.at(1).milli_seconds.must_equal 1_000
+		Time.at(1).micro_seconds.must_equal 1_000_000
+		Time.at(1).nano_seconds.must_equal 1_000_000_000
+
+		Time.at(97).milli_seconds.must_equal 97_000
+		Time.at(97).micro_seconds.must_equal 97_000_000
+		Time.at(97).nano_seconds.must_equal 97_000_000_000
+
+	end
+end
+
 class TestFeldtRubyTime < MiniTest::Unit::TestCase
 	def test_timestamp_short
 		str = Time.timestamp({:short => true})
