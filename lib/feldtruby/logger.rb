@@ -30,6 +30,10 @@ class Logger
 
   end
 
+  def verbose=(flag)
+    @params[:verbose] = flag
+  end
+
   # Return the number of events of type _eventType_.
   def num_events eventType = nil
     events(eventType).length

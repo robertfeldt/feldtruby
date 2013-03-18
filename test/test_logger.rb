@@ -67,6 +67,14 @@ describe 'Logger' do
     l.log "event 1", :a
     sio.string.must_equal ""
 
+    l.verbose = true
+    l.log "event 2", :a
+    sio.string.split("\n").last[13..-1].must_equal "{a}: event 2"
+
+    l.verbose = false
+    l.log "event 3", :a
+    sio.string.split("\n").last[13..-1].must_equal "{a}: event 2" # Still 2 since 3 was not printed
+
   end
 
   it 'can log events of a given type' do
@@ -413,6 +421,7 @@ describe "Adding logging to an object and its instance vars" do
   it 'logs to the logger' do
 
     l = @a.logger
+    l.verbose = false # So we don't print them while testing...
 
     res = @a.calc()
     l.current_value(:res).must_equal res
