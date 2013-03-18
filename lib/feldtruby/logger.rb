@@ -191,6 +191,44 @@ class Logger
 
   UnixEpoch = Time.at(0)
 
+  # Return the values at each _step_ between _start_ (inclusive) and _stop_
+  # (exclusive) for _eventType_ and _metric_. Both _start_, _stop_ can be 
+  # either a Time object or a number of milli seconds (if they are integers). 
+  # The _step_ should be given as milliseconds and defaults to one second, 
+  # i.e. 1_000.
+  def values_in_steps_between eventType, start = UnixEpoch, stop = Time.now, step = 1_000, metric = :_v
+
+    # Get events in the given interval. Since we send true to this method
+    # the events will include the one event prior to _start_ time if
+    # it exists.
+    events = events_between(start, stop, eventType, true)
+
+    #puts events.inspect
+
+    current_msec = start.is_a?(Integer) ? start : start.milli_seconds
+
+    stop_msec = stop.is_a?(Integer) ? stop : stop.milli_seconds
+
+    if events.first != nil && events.first.time.milli_seconds <= current_msec
+
+      #puts "1"
+
+      prev_value = events.first.data[metric]
+
+      values_at_steps events.drop(1), current_msec, stop_msec, step, prev_value, metric
+
+    else
+
+      #puts "2"
+
+      values_at_steps events, current_msec, stop_msec, step, nil, metric
+
+    end
+
+  end
+
+  private
+
   def values_at_steps events, currentMsec, stopMsec, step, prevValue, metric
 
     #puts "curr = #{currentMsec}, stop = #{stopMsec}, step = #{step}, prevValue = #{prevValue}"
@@ -233,44 +271,6 @@ class Logger
     end
 
   end
-
-  # Return the values at each _step_ between _start_ (inclusive) and _stop_
-  # (exclusive) for _eventType_ and _metric_. Both _start_, _stop_ can be 
-  # either a Time object or a number of milli seconds (if they are integers). 
-  # The _step_ should be given as milliseconds and defaults to one second, 
-  # i.e. 1_000.
-  def values_in_steps_between eventType, start = UnixEpoch, stop = Time.now, step = 1_000, metric = :_v
-
-    # Get events in the given interval. Since we send true to this method
-    # the events will include the one event prior to _start_ time if
-    # it exists.
-    events = events_between(start, stop, eventType, true)
-
-    #puts events.inspect
-
-    current_msec = start.is_a?(Integer) ? start : start.milli_seconds
-
-    stop_msec = stop.is_a?(Integer) ? stop : stop.milli_seconds
-
-    if events.first != nil && events.first.time.milli_seconds <= current_msec
-
-      #puts "1"
-
-      prev_value = events.first.data[metric]
-
-      values_at_steps events.drop(1), current_msec, stop_msec, step, prev_value, metric
-
-    else
-
-      #puts "2"
-
-      values_at_steps events, current_msec, stop_msec, step, nil, metric
-
-    end
-
-  end
-
-  private
 
   # Set up the internal data store.
   def setup_data_store
