@@ -13,24 +13,48 @@ describe 'Logger' do
 
   end
 
-  it 'increases default event count when default events are logged' do
+  it 'does not return an event if nothing was logged' do
+
+    e = @l.log "1"
+    e.must_equal nil
+
+  end
+
+  it 'returns an event from the log method if an event was logged' do
+
+    e = @l.log "1", :a
+    e.must_be_instance_of FeldtRuby::Logger::Event
+
+  end
+
+  it 'does not log events without a type and data' do
 
     @l.log "1"
-    @l.num_events.must_equal 1
+    @l.num_events.must_equal 0
 
     @l.log "2"
-    @l.num_events.must_equal 2
+    @l.num_events.must_equal 0
+
+    @l.log "3", nil, {:d => 1}
+    @l.num_events.must_equal 1
+
+    @l.log "1", "a"
+    @l.num_events.must_equal 1
+    @l.num_events("a").must_equal 1
+
+    @l.log "2", "a"
+    @l.num_events("a").must_equal 2
 
   end
 
   it 'can log default events (described in strings)' do
 
-    @l.log "event 1"
-    @sio.string.must_equal "event 1\n"
+    @l.log "event 1", nil, {:d => 1}
+    @sio.string.split("\n")[0][13..-1].must_equal "event 1"
     @l.num_events.must_equal 1
 
-    @l.log "event 2"
-    @sio.string.must_equal "event 1\nevent 2\n"
+    @l.log "event 2", nil, {:d => 1}
+    @sio.string.split("\n")[1][13..-1].must_equal "event 2"
     @l.num_events.must_equal 2
 
   end
@@ -38,24 +62,14 @@ describe 'Logger' do
   it 'can log events of a given type' do
 
     @l.log "1", :increase
-    @sio.string.must_equal "{increase}: 1\n"
+    @sio.string[13..-1].must_equal "{increase}: 1\n"
     @l.num_events.must_equal 0
     @l.num_events(:increase).must_equal 1
 
     @l.log "2", :increase
-    @sio.string.must_equal "{increase}: 1\n{increase}: 2\n"
+    @sio.string[40..-1].must_equal "{increase}: 2\n"
     @l.num_events.must_equal 0
     @l.num_events(:increase).must_equal 2
-
-  end
-
-  it 'can return old default events' do
-
-    @l.log "event 1"
-    @l.event_descriptions.must_equal ["event 1"]
-
-    @l.log "event 2"
-    @l.event_descriptions.must_equal ["event 1", "event 2"]
 
   end
 
@@ -66,11 +80,14 @@ describe 'Logger' do
     @l.log "0.4", :alpha
     @l.log "1", :increase
 
-    @l.event_descriptions(:increase).must_equal ["{increase}: 1", "{increase}: 2", "{increase}: 1"]
+    ei = @l.events(:increase)
+    ei.length.must_equal 3
 
-    @l.event_descriptions(:alpha).must_equal ["{alpha}: 0.4"]
+    ea = @l.events(:alpha)
+    ea.length.must_equal 1
 
-    @l.event_descriptions(:beta).must_equal []
+    eb = @l.events(:beta)
+    eb.length.must_equal 0
 
   end
 
@@ -80,8 +97,8 @@ describe 'Logger' do
     @l.log "2", :b
     @l.log "2", :a
 
-    time_stamps_a = @l.events(:a).map {|e| e.time_stamp}
-    time_stamps_b = @l.events(:b).map {|e| e.time_stamp}
+    time_stamps_a = @l.events(:a).map {|e| e.time}
+    time_stamps_b = @l.events(:b).map {|e| e.time}
 
     time_stamps_a[0].must_be_instance_of Time
     time_stamps_a[1].must_be_instance_of Time
@@ -100,56 +117,208 @@ describe 'Logger' do
 
     @l.log "a"
 
-    @sio.string.must_equal "a\n"
-    sio2.string.must_equal "a\n"
-
-  end
-
-end
-
-describe 'StatisticsLogger - A Logger that adds specific functions to log the value of a metric' do
-  before do
-    @sio = StringIO.new
-    @sl = FeldtRuby::StatisticsLogger.new @sio
-  end
-
-  it 'has a event count of 0 when no events has been logged' do
-
-    @sl.num_events.must_equal 0
+    @sio.string[13..-1].must_equal "a\n"
+    sio2.string[13..-1].must_equal "a\n"
 
   end
 
   it 'has no value for a metric without events' do
 
-    @sl.current_value(:fitness).must_equal nil
+    @l.current_value(:fitness).must_equal nil
+
+  end
+
+  it 'can return the values logged so far' do
+
+    @l.log_value :a, 1.0
+    @l.previous_value(:a).must_equal nil
+    @l.current_value(:a).must_equal 1.0
+    @l.values_for_event_and_metric(:a, :_v).must_equal [1.0]
+    @l.values_for(:a).must_equal [1.0]
+
+    @l.log_value :a, 2.0
+    @l.previous_value(:a).must_equal 1.0
+    @l.current_value(:a).must_equal 2.0
+    @l.values_for_event_and_metric(:a, :_v).must_equal [1.0, 2.0]
+    @l.values_for(:a).must_equal [1.0, 2.0]
+
+    @l.log_value :a, 3.0
+    @l.previous_value(:a).must_equal 2.0
+    @l.current_value(:a).must_equal 3.0
+    @l.values_for_event_and_metric(:a, :_v).must_equal [1.0, 2.0, 3.0]
+    @l.values_for(:a).must_equal [1.0, 2.0, 3.0]
 
   end
 
   it 'updates the value when new values are logged' do
 
-    @sl.current_value(:Fitness).must_equal nil
+    @l.current_value(:Fitness).must_equal nil
 
-    @sl.log_value(1.0, :Fitness)
+    @l.log_value(:Fitness, 1.0)
 
-    expected1 = "Fitness changed:  -> 1.000 (N/A), mean = 1.000 (min = 1.0, max = 1.0, median = 1.0, stdev = 0.00)\n"
-    @sio.string.must_equal expected1
+    expected1 = "{Fitness}:  -> 1.000, mean = 1.000 (min = 1.0, max = 1.0, median = 1.0, stdev = 0.00)\n"
+    @sio.string[13..-1].must_equal expected1
 
-    @sl.current_value(:Fitness).must_equal 1.0
+    @l.current_value(:Fitness).must_equal 1.0
 
-    @sl.log_value(1.2, :Fitness)
+    @l.log_value(:Fitness, 1.2)
 
-    @sl.current_value(:Fitness).must_equal 1.2
+    @l.current_value(:Fitness).must_equal 1.2
 
-    expected2 = "Fitness changed: 1.000 -> 1.200 (+20.0%), mean = 1.100 (min = 1.0, max = 1.2, median = 1.1, stdev = 0.10)\n"
-    @sio.string.must_equal( expected1 + expected2 )
+    expected2 = "{Fitness}: 1.000 -> 1.200 (+20.0%), mean = 1.100 (min = 1.0, max = 1.2, median = 1.1, stdev = 0.10)"
+    @sio.string.split("\n").last[13..-1].must_equal expected2
 
-    @sl.log_value(0.9, :Fitness)
+    @l.log_value(:Fitness, 0.9)
 
-    @sl.current_value(:Fitness).must_equal 0.9
+    @l.current_value(:Fitness).must_equal 0.9
 
-    expected3 = "Fitness changed: 1.200 -> 0.900 (-25.0%), mean = 1.033 (min = 0.9, max = 1.2, median = 1.0, stdev = 0.12)\n"
-    @sio.string.must_equal( expected1 + expected2 + expected3 )
+    expected3 = "{Fitness}: 1.200 -> 0.900 (-25.0%), mean = 1.033 (min = 0.9, max = 1.2, median = 1.0, stdev = 0.12)"
+    @sio.string.split("\n").last[13..-1].must_equal expected3
+
+    @l.current_value(:F).must_equal nil
+
+    @l.log_value(:F, 42.0)
+
+    expected4 = "{F}:  -> 42.000, mean = 42.000 (min = 42.0, max = 42.0, median = 42.0, stdev = 0.00)"
+    @sio.string.split("\n").last[13..-1].must_equal expected4
 
   end
 
+  describe "an timed scenario of adding multiple events" do
+
+    before do
+      @t0 = Time.now
+      sleep 0.01
+  
+      @t1 = Time.now
+      sleep 0.01
+
+      @l.log "1", :a
+
+      e = @l.log_value :c, 10
+      @tc10 = e.time
+
+      @t2 = Time.now
+      sleep 0.01
+      e = @l.log "2", :a
+      @ta2 = e.time
+
+      @t3 = Time.now
+      sleep 0.01
+      @l.log "3", :a
+  
+      @t4 = Time.now
+      sleep 0.01
+      @l.log "1", :b
+      e = @l.log_value :c, 20
+      @tc20 = e.time
+  
+      @t5 = Time.now
+      sleep 0.01
+      @l.log "4", :a
+  
+      sleep 0.01
+      @t6 = Time.now
+  
+      sleep 0.01
+      @t7 = Time.now
+    end
+
+    it 'can return events between certain times' do
+
+      @l.events_between(@t0, @t1, :a).length.must_equal 0
+  
+      @l.events_between(@t1, @t6, :a).length.must_equal 4
+      @l.events_between(@t1, @t6, :a).map {|e| e.data[:_m]}.must_equal ["1", "2", "3", "4"]
+  
+      @l.events_between(@t2, @t6, :a).length.must_equal 3
+      @l.events_between(@t2, @t6, :a).map {|e| e.data[:_m]}.must_equal ["2", "3", "4"]
+  
+      @l.events_between(@t3, @t6, :a).length.must_equal 2
+      @l.events_between(@t3, @t6, :a).map {|e| e.data[:_m]}.must_equal ["3", "4"]
+  
+      @l.events_between(@t4, @t6, :a).length.must_equal 1
+      @l.events_between(@t4, @t6, :a).map {|e| e.data[:_m]}.must_equal ["4"]
+  
+      @l.events_between(@t5, @t6, :a).length.must_equal 1
+      @l.events_between(@t5, @t6, :a).map {|e| e.data[:_m]}.must_equal ["4"]
+  
+      @l.events_between(@t6, @t7, :a).length.must_equal 0
+      @l.events_between(@t6, @t7, :a).map {|e| e.data[:_m]}.must_equal []
+  
+      @l.events_between(@t6, @t7, :b).length.must_equal 0
+      @l.events_between(@t6, @t7, :b).map {|e| e.data[:_m]}.must_equal []
+  
+      @l.events_between(@t4, @t5, :b).length.must_equal 1
+      @l.events_between(@t4, @t5, :b).map {|e| e.data[:_m]}.must_equal ["1"]
+  
+      @l.events_between(@t1, @t7, :b).map {|e| e.data[:_m]}.must_equal ["1"]
+      @l.events_between(@t2, @t7, :b).map {|e| e.data[:_m]}.must_equal ["1"]
+      @l.events_between(@t3, @t7, :b).map {|e| e.data[:_m]}.must_equal ["1"]
+  
+      @l.events_between(@t1, @t6, :c).map {|e| e.data[:_v]}.must_equal [10, 20]
+      @l.events_between(@t1, @t2, :c).map {|e| e.data[:_v]}.must_equal [10]
+      @l.events_between(@t2, @t5, :c).map {|e| e.data[:_v]}.must_equal [20]
+      @l.events_between(@t6, @t7, :c).map {|e| e.data[:_v]}.must_equal []
+
+    end
+
+    it 'can return a pre-event to a time interval if asked to' do
+
+      @l.events_between(@tc10, @t3, :c).length.must_equal 1
+      @l.events_between(@tc10, @t3, :a).length.must_equal 1
+
+      @l.events_between(@tc10, @t3, :c, true).length.must_equal 1
+      @l.events_between(@tc10, @t3, :a, true).length.must_equal 2
+
+    end
+
+    # Sleep time above was 0.01 secs => 10 msecs. So what happened is:
+    #  @t0, 10ms, t1, 10ms, a="1", c=10, t2, 10ms, 
+    #  a="2", t3, 10ms, a="3", t4, 10ms, b="1", c=20, t5, 10ms, a="4",
+    #  10ms, t6, 10ms, t7
+
+    it "can return values in steps in intervals when there are no events" do
+
+      @l.values_in_steps_between(:c, @t0, @t1, 5).must_equal [nil, nil]
+      @l.values_in_steps_between(:c, @t0, @t1, 10).must_equal [nil]
+  
+      @l.values_in_steps_between(:c, @t6, @t7, 5).must_equal [nil, nil]
+      @l.values_in_steps_between(:c, @t6, @t7, 10).must_equal [nil]
+
+    end
+
+    it "can return values in steps in intervals where there are events" do
+
+      sio = StringIO.new
+      l = FeldtRuby::Logger.new sio
+
+      t0 = Time.now
+      sleep 0.01
+      t1 = Time.now
+      sleep 0.01
+      td1 = l.log_value(:d, 1).time
+      sleep 0.01 
+      td2 = l.log_value(:d, 2).time
+      sleep 0.01 
+      td3 = l.log_value(:d, 3).time
+
+      l.values_in_steps_between(:d, t0, t1, 5).must_equal [nil, nil]
+
+      l.values_in_steps_between(:d, td1, td2, 9).must_equal [1, 1]
+
+      diff = td2.milli_seconds - td1.milli_seconds
+      #puts diff
+
+      l.values_in_steps_between(:d, td1, td2, diff-1).must_equal [1, 1]
+      l.values_in_steps_between(:d, td1, td2, diff).must_equal [1, 1]
+      l.values_in_steps_between(:d, td1, td2, diff+1).must_equal [1]
+
+      l.values_in_steps_between(:d, td1, td2.milli_seconds+1, diff-1).must_equal [1, 1]
+      l.values_in_steps_between(:d, td1, td2.milli_seconds+1, diff).must_equal [1, 2]
+      l.values_in_steps_between(:d, td1, td2.milli_seconds+1, diff+1).must_equal [1]
+
+    end
+
+  end
 end

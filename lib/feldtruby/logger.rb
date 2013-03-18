@@ -1,12 +1,14 @@
 require 'stringio'
 require 'time'
 require 'feldtruby/array/basic_stats'
+require 'feldtruby/time'
 
 module FeldtRuby
 
 # A structured logging object that logs events. Events are time-stamped
 # objects that have type and can contain arbitrary data. A logger can have
-# multiple IO streams to which it logs events.
+# multiple IO streams to which it logs events. With each event data can be
+# saved.
 #
 # This default logger saves events locally in a hash. 
 class Logger
@@ -16,9 +18,20 @@ class Logger
 
     add_io io
 
-    # We save a unique array of events for each type.
-    @events = Hash.new {|h,k| h[k] = Array.new}
+    setup_data_store
 
+    @start_time = Time.now
+
+  end
+
+  # Return the number of events of type _eventType_.
+  def num_events eventType = nil
+    events(eventType).length
+  end
+
+  # Return the elapsed time since the logger was started.
+  def elapsed_time t = Time.now
+    t - @start_time
   end
 
   # Add one more _io_ stream to which events are logged.
@@ -29,121 +42,294 @@ class Logger
 
   end
 
-  # Puts the given _str_ on the io stream(s).
-  def io_puts str
-    @ios.each {|io| io.puts str}
-  end
-
-  # Return the number of events of type _eventType_.
-  def num_events eventType = ""
-    @events[eventType].length
-  end
-
   # Events are time-stamped hashes of ruby values with a named type (given
   # as a string). The time stamps are always saved as UTC.
   class Event
-    attr_reader :type, :data, :time_stamp
+    attr_reader :type, :data, :time
     def initialize(type, data, time = Time.now)
-      @type, @data, @time_stamp = type, data, time.utc
+      @type, @data, @time = type, data, time
     end
 
     # Convert to json for saving in db. Since each event type is saved in its
     # own db/collection we do NOT include the event type.
     def to_db_json
       # We save with minimal json tag names since we need to conserve space
-      # if saving this to disc.
+      # if saving this to disc or db.
       {
-        # _id will be added automatically by MongoDB if it is used.
-        "t" => time.iso8601, # We follow the Cube convention of saving UTC
+        # _id will be added automatically by MongoDB.
+        "t" => time.utc.iso8601, # We follow the Cube convention of saving UTC
         "d" => data
       }.to_json(*a)
     end
   end
 
-  # Save the event in the data store.
-  def save_event event
-    @events[event.type] << event
-  end
-
   # Return all the events for a given _eventType_.
-  def events(eventType = "")
+  def events(eventType = nil)
     @events[eventType]
   end
 
-  # Return all the event descriptions for a given _eventType_.
-  def event_descriptions(eventType = "")
-    @events[eventType].map {|e| e.data[:description]}
-  end
+  # Return all events, for a given _eventType_, between the _start_ and _stop_
+  # times. If _includePreEvent_ is true we include the event that comes directly
+  # before the start time.
+  def events_between start, stop, eventType = nil, includePreEvent = false
 
-  # Log an event described by a string _str_ optionally with an event type
-  # _eventType_.
-  def log str, eventType = ""
+    all_events = events(eventType)
 
-    description = log_entry_description(str, eventType)
+    es = all_events.select do |e|
 
-    save_event Event.new(eventType, {:description => description})
+      t = e.time
 
-    io_puts description
+      t >= start && t <= stop
 
-  end
+    end
 
-  # Map a string and event type to a log string.
-  def log_entry_description str, eventType = ""
+    if includePreEvent
 
-    event_tag = eventType == "" ? "" : "{#{eventType.to_s}}: "
+      index_to_first_selected_event = all_events.index(es.first)
 
-    event_tag + str
+      if index_to_first_selected_event && index_to_first_selected_event > 0
+        # There is a pre-event so add it
+        es.unshift all_events[index_to_first_selected_event - 1]
+      end
 
-  end
-end
+    end
 
-class StatisticsLogger < Logger
-  # Get an array of values for a metric.
-  def values_for_metric metric
-
-    event_name = event_name_for_metric metric
-
-    events(event_name).map {|e| e.data[:v]}
+    es
 
   end
 
-  # Return the current (latest) value for a given metric. Return nil if no
-  # value has been set.
-  def current_value(metric)
-    values_for_metric(metric).last
+  # Log an event described by a _message_ optionally with an event type
+  # _eventType_ and data in a hash.
+  #
+  # The _printFrequency_ gives the minimum time that must elapse between
+  # messages for _eventType_ is printed on the IO stream(s).
+  def log message, eventType = nil, data = {}, saveMessageInData = true, printFrequency = 0.0
+
+    # Get current time now, before we waste time in processing this event
+    time, elapsed = time_and_elapsed_time_since_last_event eventType
+
+    event = nil # So we return nil if no event was created
+
+    # We only save the event if an eventType or data was given.
+    if eventType || data.length > 0
+
+      # We only save the message if explicitly asked to and the :_m data
+      # name not already used.
+      data[:_m] = message if message && saveMessageInData && !data.has_key?(:_m)
+
+      event = Event.new(eventType, data, time)
+
+      save_event event
+
+    end
+
+    # Create a standard message for the change if no message given.
+    unless message
+
+      message = data.map do |metric, value|
+
+        old_value = previous_value eventType, metric
+
+        description_for_metric_change value, old_value, eventType, metric
+
+      end.join("\n")
+
+    end
+
+    # We only print if enough time since last time we printed. This way
+    # we avoid "flooding" the user with log messages.
+    if elapsed >= printFrequency
+      io_puts log_entry_description(message, eventType), time
+    end
+
+    event
+
   end
 
-  # Log a new value for the metric named _metric_.
-  def log_value newValue, metric = ""
+  # Log a _newValue_ for the _eventType_. Optionally a message and a name
+  # for a metric can be given but if not we use sensible defaults.
+  def log_value eventType, newValue, message = nil, metric = :_v, printFrequency = 0.0
 
-    old_value = current_value metric
+    log message, eventType, {metric => newValue}, false, printFrequency
 
-    save_event Event.new(event_name_for_metric(metric), {:v => newValue})
+  end
 
-    io_puts description_for_metric_change(newValue, old_value, metric)
+  # Get an array of values for the metric named _metric_ in events
+  # of type _eventType_.
+  def values_for_event_and_metric eventType, metric = :_v
+    events(eventType).map {|e| e.data[metric]}
+  end
+
+  # Return the current (latest) value for a given eventType and metric. 
+  # Return nil if no value has been set.
+  def current_value eventType, metric = :_v
+
+    event = events(eventType).last
+
+    return nil unless event
+
+    event.data[metric]
+
+  end
+
+  # Shortcut method to get the value saved for a certain _eventType_.
+  def values_for eventType
+    values_for_event_and_metric eventType
+  end
+
+  # Return the current (latest) value for a given eventType and metric. 
+  # Return nil if no value has been set.
+  def previous_value eventType, metric = :_v
+
+    event = events(eventType)[-2]
+
+    return nil unless event
+
+    event.data[metric]
+
+  end
+
+  UnixEpoch = Time.at(0)
+
+  def values_at_steps events, currentMsec, stopMsec, step, prevValue, metric
+
+    #puts "curr = #{currentMsec}, stop = #{stopMsec}, step = #{step}, prevValue = #{prevValue}"
+
+    e, *rest = events
+
+    if e.nil?
+
+      #puts "a"
+
+      return [] if currentMsec >= stopMsec
+
+      # No more events so fill up with prevValue
+      [prevValue] * ((stopMsec - currentMsec) / step)
+
+    else
+
+      #puts "b"
+
+      next_event_msec = e.time.milli_seconds
+
+      num_values = ((next_event_msec - currentMsec) / step) + 1
+
+      vs = [prevValue] * num_values
+
+      next_msec = currentMsec + num_values * step
+
+      vs + values_at_steps( rest, next_msec, stopMsec, step, e.data[metric], metric )
+
+    end
+
+  end
+
+  # Return the values at each _step_ between _start_ (inclusive) and _stop_
+  # (exclusive) for _eventType_ and _metric_. Both _start_, _stop_ can be 
+  # either a Time object or a number of milli seconds (if they are integers). 
+  # The _step_ should be given as milliseconds and defaults to one second, 
+  # i.e. 1_000.
+  def values_in_steps_between eventType, start = UnixEpoch, stop = Time.now, step = 1_000, metric = :_v
+
+    # Get events in the given interval. Since we send true to this method
+    # the events will include the one event prior to _start_ time if
+    # it exists.
+    events = events_between(start, stop, eventType, true)
+
+    #puts events.inspect
+
+    current_msec = start.is_a?(Integer) ? start : start.milli_seconds
+
+    stop_msec = stop.is_a?(Integer) ? stop : stop.milli_seconds
+
+    if events.first != nil && events.first.time.milli_seconds <= current_msec
+
+      #puts "1"
+
+      prev_value = events.first.data[metric]
+
+      values_at_steps events.drop(1), current_msec, stop_msec, step, prev_value, metric
+
+    else
+
+      #puts "2"
+
+      values_at_steps events, current_msec, stop_msec, step, nil, metric
+
+    end
 
   end
 
   private
 
-    def event_name_for_metric metric
-    "metric_" + metric.to_s
+  # Set up the internal data store.
+  def setup_data_store
+    # For this default logger class we just use an array of the events for each
+    # event type.
+    @events = Hash.new {|h,k| h[k] = Array.new}
   end
 
-  def description_for_metric_change newValue, oldValue, metric
+  # Return the current time and elapsed time since we last logged an event of 
+  # this type.
+  # If a filter is given it is used to filter the events (of this type)
+  # before selecting the one to compare current time to.
+  def time_and_elapsed_time_since_last_event(eventType = nil, &filter)
+
+    if filter
+      latest = events(eventType).reverse.find(&filter)
+    else
+      latest = events(eventType).last
+    end
+
+    t = Time.now
+
+    return [t, 0.0] unless latest
+
+    return t, (t - latest.time)
+
+  end
+
+  # Puts the given _message_ on the io stream(s) stamped with the given time.
+  def io_puts message, time = Time.now
+
+    s = time.strftime("%H:%M.%S%3N, ") + message
+
+    @ios.each {|io| io.puts s}
+
+  end
+
+  # Save the event in the data store.
+  def save_event event
+    @events[event.type] << event
+    event
+  end
+
+  # Prepend a tag describing the event type to _str_.
+  def log_entry_description str, eventType = nil
+
+    event_tag = eventType ? "{#{eventType.to_s}}: " : ""
+
+    event_tag + str
+
+  end
+
+  def description_for_metric_change newValue, oldValue, eventType, metric
 
     pc = percent_change(oldValue, newValue)
+    pcs = (pc ? " (#{pc})" : "")
 
-    "#{metric.to_s} changed: #{format_number(oldValue)} -> #{format_number(newValue)} (#{pc}), mean = #{summary_stats(metric)}"
+    summary = summary_stats eventType, metric
+
+    "#{format_number(oldValue)} -> #{format_number(newValue)}#{pcs}, mean = #{summary}"
 
   end
 
-  def summary_stats metric
-    values_for_metric(metric).summary_stats
+  def summary_stats eventType, metric
+    values_for_event_and_metric(eventType, metric).summary_stats
   end
 
   def percent_change oldValue, newValue
-    return "N/A" if oldValue.nil?
+    return nil if oldValue.nil?
     sign = (oldValue < newValue) ? "+" : ""
     "#{sign}%.1f%%" % ((newValue - oldValue) / oldValue.to_f * 100.0)
   end
@@ -154,6 +340,39 @@ class StatisticsLogger < Logger
     else
       number.to_s
     end
+  end
+end
+
+# A simple logging interface front end for classes that need basic logging.
+# Just include and call log or log_value. Uses a single common logger
+# unless a new one has been explicitly set.
+module Logging
+  # The main FeldtRuby logger which is used by default.
+  def self.logger
+    @logger ||= FeldtRuby::StatisticsLogger.new
+  end
+
+  # Set the default FeldtRuby logger.
+  def self.logger=(logger)
+    @logger = logger
+  end
+
+  # The logger used in this object. Use the default FeldtRuby logger if not
+  # specified.
+  def logger
+    @logger || FeldtRuby::Logging.logger
+  end
+
+  def logger=(logger)
+    @logger = logger
+  end
+
+  def log str, eventType = nil
+    logger.log str, eventType
+  end
+
+  def log_value newValue, metric = ""
+    logger.log_value newValue, metric
   end
 end
 
