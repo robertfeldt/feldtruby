@@ -300,23 +300,44 @@ describe 'Logger' do
       td1 = l.log_value(:d, 1).time
       sleep 0.01 
       td2 = l.log_value(:d, 2).time
-      sleep 0.01 
+      sleep 0.001
+      t2 = Time.now # t2 should be at least one msec later than td2
+      sleep 0.011
       td3 = l.log_value(:d, 3).time
+      sleep 0.01
+      t3 = Time.now
 
       l.values_in_steps_between(:d, t0, t1, 5).must_equal [nil, nil]
 
-      l.values_in_steps_between(:d, td1, td2, 9).must_equal [1, 1]
-
       diff = td2.milli_seconds - td1.milli_seconds
-      #puts diff
 
       l.values_in_steps_between(:d, td1, td2, diff-1).must_equal [1, 1]
-      l.values_in_steps_between(:d, td1, td2, diff).must_equal [1, 1]
+
+      # The stop time is exclusive so should NOT be included
+      l.values_in_steps_between(:d, td1, td2, diff).must_equal [1]
       l.values_in_steps_between(:d, td1, td2, diff+1).must_equal [1]
 
-      l.values_in_steps_between(:d, td1, td2.milli_seconds+1, diff-1).must_equal [1, 1]
-      l.values_in_steps_between(:d, td1, td2.milli_seconds+1, diff).must_equal [1, 2]
-      l.values_in_steps_between(:d, td1, td2.milli_seconds+1, diff+1).must_equal [1]
+      l.values_in_steps_between(:d, td1, t2, diff-1).must_equal [1, 1]
+      l.values_in_steps_between(:d, td1, t2, diff).must_equal [1, 2]
+      l.values_in_steps_between(:d, td1, t2, diff+1).must_equal [1]
+
+      vs = l.values_in_steps_between(:d, t0, t3, 1)
+
+      n = 0
+      d = td1.milli_seconds - t0.milli_seconds
+      vs[n, d].must_equal( [nil] * d )
+
+      n += d
+      d = td2.milli_seconds - td1.milli_seconds
+      vs[n, d].must_equal( [1] * d )
+
+      n += d
+      d = td3.milli_seconds - td2.milli_seconds
+      vs[n, d].must_equal( [2] * d )
+
+      n += d
+      d = t3.milli_seconds - td3.milli_seconds
+      vs[n, d].must_equal( [3] * d )
 
     end
 

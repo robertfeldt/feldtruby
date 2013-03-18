@@ -212,11 +212,21 @@ class Logger
 
       next_event_msec = e.time.milli_seconds
 
-      num_values = ((next_event_msec - currentMsec) / step) + 1
+      q, m = (next_event_msec - currentMsec).divmod(step)
 
-      vs = [prevValue] * num_values
+      vs = [prevValue] * q
 
-      next_msec = currentMsec + num_values * step
+      if m == 0
+        if next_event_msec < stopMsec
+          vs << e.data[metric]
+        else
+          return vs
+        end
+      else
+        vs << prevValue
+      end
+
+      next_msec = currentMsec + (q + 1) * step
 
       vs + values_at_steps( rest, next_msec, stopMsec, step, e.data[metric], metric )
 
