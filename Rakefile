@@ -13,6 +13,14 @@ def run_tests(testFiles)
   psys "ruby -Ilib:. -e '#{require_files}' --"
 end
 
+desc "Run tests separately to identify problematic ones"
+task :test_sep do
+  Dir["test/**/test*.rb"].each do |fn|
+    puts "RUNNING: #{fn}"
+    run_tests [fn]
+  end
+end
+
 desc "Run all tests"
 task :test do
   run_tests Dir["test/**/test*.rb"]
