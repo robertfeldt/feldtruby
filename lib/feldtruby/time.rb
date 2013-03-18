@@ -6,12 +6,12 @@ class Time
 	end
 
 	# Number of microseconds since Unix epoch.
-	def micro_seconds(time = Time.now)
+	def micro_seconds
 		(to_i * 1_000_000) + (nsec / 1_000)
 	end
 
 	# Number of nanoseconds since Unix epoch.
-	def nano_seconds(time = Time.now)
+	def nano_seconds
 		(to_i * 1_000_000_000) + nsec
 	end
 	

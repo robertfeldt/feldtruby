@@ -1,14 +1,13 @@
 require 'feldtruby/optimize'
 require 'feldtruby/optimize/objective'
 require 'feldtruby/optimize/search_space'
-require 'feldtruby/optimize/stdout_logger'
 require 'feldtruby/optimize/max_steps_termination_criterion'
 require 'feldtruby/math/rand'
 require 'feldtruby/array'
+require 'feldtruby/logger'
 
 module FeldtRuby::Optimize 
 	DefaultOptimizationOptions = {
-		:logger => FeldtRuby::Optimize::StdOutLogger,
 		:maxNumSteps => 10_000,
 		:terminationCriterionClass => FeldtRuby::Optimize::MaxStepsTerminationCriterion,
 		:verbose => false,
@@ -25,18 +24,24 @@ end
 # Find an vector of float values that optimizes a given
 # objective.
 class FeldtRuby::Optimize::Optimizer
+	include FeldtRuby::Logging
+
 	attr_reader :objective, :search_space, :best, :best_quality_value, :best_sub_quality_values, :num_optimization_steps, :termination_criterion
 
 	def initialize(objective, searchSpace = FeldtRuby::Optimize::DefaultSearchSpace, options = {})
 		@best = nil # To avoid warnings if not set
 		@objective, @search_space = objective, searchSpace
 		@options = FeldtRuby::Optimize.override_default_options_with(options)
+
+		# Must setup logger before setting options since verbosity of logger is
+		# an option!
+		setup_logger_and_distribute_to_instance_variables()
+
 		initialize_options(@options)
-		@objective.logger = @logger
 	end
 
 	def initialize_options(options)
-		@logger = options[:logger].new(self, options[:verbose])
+		self.logger.verbose = options[:verbose]
 		@termination_criterion = options[:terminationCriterion]
 	end
 
@@ -46,21 +51,43 @@ class FeldtRuby::Optimize::Optimizer
 		# Set up a random best since other methods require it
 		update_best([search_space.gen_candidate()])
 		begin
-			@logger.note_optimization_starts()
+			log "Optimization with optimizer #{self.class.inspect} started"
 			while !termination_criterion.terminate?(self)
 				new_candidates = optimization_step()
 				@num_optimization_steps += 1
-				@logger.note_another_optimization_step(@num_optimization_steps)
+				log_value :NumOptimizationSteps, @num_optimization_steps
 				update_best(new_candidates)
 			end
 		rescue Exception => e
-			@logger.note_termination("!!! - Optimization FAILED with exception: #{e.message} - !!!" + e.backtrace.join("\n"))
-		ensure	
-			@logger.note_termination("!!! - Optimization FINISHED after #{@num_optimization_steps} steps - !!!")
+			log( "!!! - Optimization FAILED with exception: #{e.message} - !!!" + e.backtrace.join("\n"), 
+				:exception, {:exception_class => e.class.inspect, :backtrace => e.backtrace.join("\n")} )
+		ensure
+			log_value :num_steps_when_stopped, @num_optimization_steps,
+				"!!! - Optimization FINISHED after #{@num_optimization_steps} steps - !!!"
 		end
 		@objective.note_end_of_optimization(self)
-		@logger.note_end_of_optimization(self)
+		log_end_of_optimization
 		@best # return the best
+	end
+
+	def log_end_of_optimization
+		best_msg = info_about_candidate(self.best, self.best_quality_value, 
+			self.best_sub_quality_values, "best")
+		log("End of optimization" + "Optimizer: #{self.class}\n" +
+			best_msg + "\n" +
+			"Time used = #{Time.human_readable_timestr(logger.elapsed_time)}, " + 
+			"Steps performed = #{@num_optimization_steps}, " + 
+			"#{Time.human_readable_timestr(time_per_step, true)}/step")
+	end
+
+	def time_per_step
+		logger.elapsed_time / logger.current_value(:NumOptimizationSteps)
+	end
+
+
+	def info_about_candidate(candidate, qualityValue, subQualityValues, nameString = "new")
+		info_str = nameString ? "#{nameString} = #{candidate.inspect}\n  " : "  "
+		info_str + candidate._quality_value.inspect
 	end
 
 	# Run one optimization step. Default is to do nothing, i.e. this is just a superclass,
@@ -81,8 +108,14 @@ class FeldtRuby::Optimize::Optimizer
 			if @best
 				old_best, new_qv_old_best, sub_qv_old_best = ranked.select {|a| a.first == @best}.first
 			end
-			@logger.note_new_best(new_best, new_quality_value, new_sub_qvalues, 
-				@best, new_qv_old_best, sub_qv_old_best)
+			log "New best candidate found", :new_best, {
+				:new_best => new_best,
+				:new_quality_value => new_quality_value, 
+				:new_sub_qvalues => new_sub_qvalues,
+				:old_best => @best,
+				:old_quality_value => new_qv_old_best,
+				:old_sub_qvalues => sub_qv_old_best			
+			}
 			@best = new_best
 			@best_quality_value = new_quality_value
 			@best_sub_quality_values = new_sub_qvalues

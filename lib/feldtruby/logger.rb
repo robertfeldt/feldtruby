@@ -28,6 +28,8 @@ class Logger
 
     @start_time = Time.now
 
+    @last_time_printed_for_event_type = Hash.new(UnixEpoch)
+
   end
 
   def verbose=(flag)
@@ -148,8 +150,9 @@ class Logger
 
     # We only print if enough time since last time we printed. This way
     # we avoid "flooding" the user with log messages.
-    if elapsed >= printFrequency
+    if (time - @last_time_printed_for_event_type[eventType]) >= printFrequency
       io_puts log_entry_description(message, eventType), time
+      @last_time_printed_for_event_type[eventType] = time
     end
 
     event
@@ -439,11 +442,13 @@ module Logging
 
   end
 
-  def log message, eventType = nil, data = {}, saveMessageInData = true, printFrequency = 0.0
-    logger.log message, eventType, data, saveMessageInData, printFrequency
+  def log message, eventType = nil, data = {}, saveMessageInData = true, printFrequency = 0.5
+    # We always print log messages if no event type is given
+    pf = eventType ? printFrequency : 0.0
+    logger.log message, eventType, data, saveMessageInData, pf
   end
 
-  def log_value eventType, newValue, message = nil, metric = :_v, printFrequency = 0.0
+  def log_value eventType, newValue, message = nil, metric = :_v, printFrequency = 0.5
     logger.log_value eventType, newValue, message, metric, printFrequency
   end
 end

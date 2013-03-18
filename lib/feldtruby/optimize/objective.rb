@@ -1,6 +1,7 @@
 require 'feldtruby/optimize'
 require 'feldtruby/float'
 require 'feldtruby/optimize/sub_qualities_comparators'
+require 'feldtruby/logger'
 
 module FeldtRuby::Optimize
 
@@ -22,17 +23,17 @@ module FeldtRuby::Optimize
 # An objective has version numbers to indicate the number of times a new min or max
 # value has been identified for a sub-objective.
 class Objective
+	include FeldtRuby::Logging
+
 	# Current version of this objective. Is updated when the min or max values for a sub-objective
 	# has been updated.
 	attr_accessor :current_version
 
-	# For logging changes to the objective.
-	attr_accessor :logger
-
 	def initialize
-		@logger = nil # To avoid getting warnings that logger has not been initialized
 		@current_version = 0
 		@pareto_front = Array.new(num_aspects) # The pareto front is misguided since it only has one best value per sub-objective, not the whole front!
+
+		setup_logger_and_distribute_to_instance_variables()
 	end
 
 	# Return the number of aspects/sub-objectives of this objective.
@@ -158,7 +159,7 @@ class Objective
 	end
 
 	def note_end_of_optimization(optimizer)
-		log("Objective reporting the Pareto front", info_pareto_front())
+		log "Objective reporting the Pareto front:\n" + info_pareto_front()
 	end
 
 	def info_pareto_front
@@ -277,15 +278,12 @@ class Objective
 	end
 
 	def log_new_min_max(index, newValue, oldValue, description)
-		log("New global #{description} for sub-objective #{aspect_methods[index]}",
-			("a %.3f" % (100.0 * (newValue - oldValue).protected_division_with(oldValue))) + "% difference",
-			"new = #{newValue}, old = #{oldValue}",
-			"scale is now [#{global_min_values_per_aspect[index]}, #{global_max_values_per_aspect[index]}]",
+		log("New global #{description} for sub-objective #{aspect_methods[index]}\n" +
+			("a %.3f" % (100.0 * (newValue - oldValue).protected_division_with(oldValue))) + "% difference\n" +
+			"new = #{newValue}, old = #{oldValue}\n" +
+			"scale is now [#{global_min_values_per_aspect[index]}, #{global_max_values_per_aspect[index]}]\n" +
 			"objective version = #{current_version}")
-	end
-
-	def log(msg, *values)
-		@logger.anote(msg, *values) if @logger
+		log_value ("new_#{description}_#{aspect_methods[index]}").intern, newValue
 	end
 
 	# Global min values for each aspect. Needed for SWGR. Updated every time we see a new

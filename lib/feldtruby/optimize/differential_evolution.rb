@@ -1,6 +1,7 @@
 require 'feldtruby/optimize/optimizer'
 require 'feldtruby/math/rand'
 require 'feldtruby/vector'
+require 'feldtruby/logger'
 
 module FeldtRuby::Optimize
 
@@ -62,7 +63,7 @@ class DEOptimizerBase < EvolutionaryOptimizer
 
 		# Supplant the target vector with the trial vector if better
 		if best.first != target
-			@logger.note_new_better("Trial vector was better", *best)
+			log "Trial vector was better", :new_better, {:better => best[0], :quality => best[1], :sub_qualities => best[2]}
 			trial_better = true
 			update_candidate_in_population(target_index, trial)
 		else
