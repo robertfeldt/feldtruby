@@ -343,3 +343,74 @@ describe 'Logger' do
 
   end
 end
+
+describe "Adding logging to an object and its instance vars" do
+  class A
+    include FeldtRuby::Logging
+
+    def initialize(b)
+      @b = b
+      setup_logger_and_distribute_to_instance_variables()
+    end
+
+    def calc
+      log "entering calc"
+      val = 1 + @b.calc
+      log_value :res, val
+      val
+    end
+  end
+
+  class B
+    include FeldtRuby::Logging
+
+    def initialize(l = nil)
+      setup_logger_and_distribute_to_instance_variables l
+    end
+
+    def calc
+      log "entering B#calc"
+      v = rand(100)
+      log_value :b_res, v
+      v
+    end
+  end
+
+  before do
+    @b = B.new
+    @a = A.new @b
+  end
+
+  it 'sets up the sam logger in both A objects and their instance vars' do
+
+    @a.logger.must_be_instance_of FeldtRuby::Logger
+
+    @b.logger.must_equal @a.logger
+
+  end
+
+  it 'uses an explicit logger supplied to a instance var also in the using object' do
+
+    l = FeldtRuby::Logger.new
+    b = B.new l
+    a = A.new b
+
+    b.logger.must_equal a.logger
+    a.logger.must_equal l
+
+  end
+
+  it 'logs to the logger' do
+
+    l = @a.logger
+
+    res = @a.calc()
+    l.current_value(:res).must_equal res
+    l.current_value(:b_res).must_equal res-1
+
+    res = @a.calc()
+    l.current_value(:res).must_equal res
+    l.current_value(:b_res).must_equal res-1
+
+  end
+end

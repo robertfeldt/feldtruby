@@ -357,32 +357,82 @@ end
 # Just include and call log or log_value. Uses a single common logger
 # unless a new one has been explicitly set.
 module Logging
-  # The main FeldtRuby logger which is used by default.
-  def self.logger
-    @logger ||= FeldtRuby::StatisticsLogger.new
+  attr_accessor :logger
+
+  def setup_logger_and_distribute_to_instance_variables(logger = nil)
+
+    # Precedence for loggers if several has been setup:
+    #  1. One specified as parameter to this method
+    #  2. One that has already been set on this object
+    #  3. First one found on an instance var
+    #  4. Create a new standard one
+    self.logger = logger || self.logger || find_logger_set_on_instance_vars() ||
+      FeldtRuby::Logger.new
+
+    # Now distribute the preferred logger to all instance vars, recursively.
+    self.instance_variables.each do |ivar_name|
+
+      ivar = self.instance_variable_get ivar_name
+
+      if ivar.respond_to?(:setup_logger_and_distribute_to_instance_variables)
+        ivar.setup_logger_and_distribute_to_instance_variables self.logger 
+      end
+
+    end
+
   end
 
-  # Set the default FeldtRuby logger.
-  def self.logger=(logger)
-    @logger = logger
+  def find_logger_set_on_instance_vars
+
+    # First see if we find it in the immediate ivars
+    self.instance_variables.each do |ivar_name|
+
+      ivar = self.instance_variable_get ivar_name
+
+      if ivar.respond_to?(:logger)
+
+        begin
+
+          l = ivar.send(:logger)
+          return l if l.is_a?(FeldtRuby::Logger)
+
+        rescue Exception => e
+        end
+
+      end
+
+    end
+
+    # If we come here it means we did NOT find a logger in immediate
+    # ivar's. So we recurse.
+    self.instance_variables.each do |ivar_name|
+
+      ivar = self.instance_variable_get ivar_name
+
+      if ivar.respond_to?(:find_logger_set_on_instance_vars)
+
+        begin
+
+          l = ivar.send(:find_logger_set_on_instance_vars)
+          return l if l.is_a?(FeldtRuby::Logger)
+
+        rescue Exception => e
+        end
+
+      end
+
+    end
+
+    nil
+
   end
 
-  # The logger used in this object. Use the default FeldtRuby logger if not
-  # specified.
-  def logger
-    @logger || FeldtRuby::Logging.logger
+  def log message, eventType = nil, data = {}, saveMessageInData = true, printFrequency = 0.0
+    logger.log message, eventType, data, saveMessageInData, printFrequency
   end
 
-  def logger=(logger)
-    @logger = logger
-  end
-
-  def log str, eventType = nil
-    logger.log str, eventType
-  end
-
-  def log_value newValue, metric = ""
-    logger.log_value newValue, metric
+  def log_value eventType, newValue, message = nil, metric = :_v, printFrequency = 0.0
+    logger.log_value eventType, newValue, message, metric, printFrequency
   end
 end
 
