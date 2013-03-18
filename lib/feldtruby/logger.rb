@@ -12,7 +12,13 @@ module FeldtRuby
 #
 # This default logger saves events locally in a hash. 
 class Logger
-  def initialize(io = STDOUT)
+  DefaultParams = {
+    :verbose => true
+  }
+
+  def initialize(io = STDOUT, params = DefaultParams)
+
+    @params = DefaultParams.clone.update(params)
 
     @ios = []
 
@@ -301,6 +307,8 @@ class Logger
 
   # Puts the given _message_ on the io stream(s) stamped with the given time.
   def io_puts message, time = Time.now
+
+    return unless @params[:verbose]
 
     s = time.strftime("%H:%M.%S%3N, ") + message
 

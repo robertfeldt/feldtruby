@@ -59,6 +59,16 @@ describe 'Logger' do
 
   end
 
+  it 'does not print messages to io stream(s) if verbose flag is false' do
+
+    sio = StringIO.new
+    l = FeldtRuby::Logger.new(sio, {:verbose => false})
+
+    l.log "event 1", :a
+    sio.string.must_equal ""
+
+  end
+
   it 'can log events of a given type' do
 
     @l.log "1", :increase
