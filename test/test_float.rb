@@ -27,4 +27,9 @@ describe 'to_significant_digits' do
 		2.345.to_significant_digits(4).must_equal 2.345
 		(-9.8654).to_significant_digits(3).must_equal -9.87
 	end
+
+	it 'can handle Infinity' do
+		Float::INFINITY.to_significant_digits(2).must_equal Float::INFINITY
+		(-Float::INFINITY).to_significant_digits(2).must_equal (-Float::INFINITY)
+	end
 end

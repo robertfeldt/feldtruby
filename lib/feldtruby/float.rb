@@ -14,10 +14,15 @@ class Numeric
 	def ratio_diff_vs(other)
 		(self - other).protected_division_with(other)
 	end
+
+	def to_significant_digits(numDigits = 3)
+		self.to_f.to_significant_digits(numDigits)
+	end
 end
 
 class Float
-	def to_significant_digits(numDigits)
+	def to_significant_digits(numDigits = 3)
+		return self if self == INFINITY || self == -INFINITY
 		Float("%.#{numDigits}g" % self)
 	end
 end
