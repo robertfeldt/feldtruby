@@ -18,3 +18,13 @@ describe "protected_division_with" do
 		1.0.protected_division_with(0).must_equal 0.0
 	end
 end
+
+describe 'to_significant_digits' do
+	it 'can handle normal, floats around zero' do
+		1.0.to_significant_digits(2).must_equal 1.0
+		1.11.to_significant_digits(2).must_equal 1.1
+		2.345.to_significant_digits(3).must_equal 2.35
+		2.345.to_significant_digits(4).must_equal 2.345
+		(-9.8654).to_significant_digits(3).must_equal -9.87
+	end
+end

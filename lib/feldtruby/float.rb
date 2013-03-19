@@ -15,3 +15,9 @@ class Numeric
 		(self - other).protected_division_with(other)
 	end
 end
+
+class Float
+	def to_significant_digits(numDigits)
+		Float("%.#{numDigits}g" % self)
+	end
+end
