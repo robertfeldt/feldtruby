@@ -1,5 +1,4 @@
 require 'feldtruby/minitest_extensions'
-
 require 'feldtruby/optimize/objective'
 require 'feldtruby/array'
 require 'pp'
@@ -121,7 +120,7 @@ describe "two sub-objectives" do
 
     # Now we come with a worse candidate => still zero
     @o.fitness_for([1,2,5]).must_equal 0.0
-    
+
     # But now the previous value is the best candidate we have seen so gets maximum quality value
     @o.fitness_for([1,2,3]).must_equal 1.0
 

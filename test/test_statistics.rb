@@ -156,7 +156,7 @@ describe "Plotting" do
   it "can do a scatter plot" do
 
     d = File.dirname(__FILE__) + "/"
-    filename = d + "tmp.csv"
+    filename = d + "tmp_shorter.csv"
 
     out = "scatterplot.pdf"
 
@@ -173,7 +173,7 @@ describe "Plotting" do
   it "can do a hexbin heatmap plot" do
 
     d = File.dirname(__FILE__) + "/"
-    filename = d + "tmp.csv"
+    filename = d + "tmp_shorter.csv"
 
     out = "hexbin.pdf"
 

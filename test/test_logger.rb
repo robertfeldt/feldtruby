@@ -1,10 +1,35 @@
 require 'feldtruby/logger'
 
-describe 'Logger' do
+describe 'EventLogger' do
 
   before do
     @sio = StringIO.new
-    @l = FeldtRuby::Logger.new @sio
+    @l = FeldtRuby::Logger.new @sio, {:verbose => true}
+  end
+
+  it 'can log default events' do
+
+    @l.log "event 1"
+    @sio.string.split("\n")[0][13..-1].must_equal "event 1"
+
+    @l.log "event 2"
+    @sio.string.split("\n")[1][13..-1].must_equal "event 2"
+
+  end
+
+  it 'can return the values logged so far' do
+
+    @l.log_value :a, 1.0
+    @sio.string.split("\n")[0][13..-1].must_equal "{a}: Value changed to 1.0"
+
+  end
+end
+
+describe 'EventLogger' do
+
+  before do
+    @sio = StringIO.new
+    @l = FeldtRuby::EventLogger.new @sio, {:verbose => true}
   end
 
   it 'has a event count of 0 when no events has been logged' do
@@ -23,7 +48,7 @@ describe 'Logger' do
   it 'returns an event from the log method if an event was logged' do
 
     e = @l.log "1", :a
-    e.must_be_instance_of FeldtRuby::Logger::Event
+    e.must_be_instance_of FeldtRuby::EventLogger::Event
 
   end
 
@@ -62,7 +87,7 @@ describe 'Logger' do
   it 'does not print messages to io stream(s) if verbose flag is false' do
 
     sio = StringIO.new
-    l = FeldtRuby::Logger.new(sio, {:verbose => false})
+    l = FeldtRuby::EventLogger.new(sio, {:verbose => false})
 
     l.log "event 1", :a
     sio.string.must_equal ""
@@ -309,7 +334,7 @@ describe 'Logger' do
     it "can return values in steps in intervals where there are events" do
 
       sio = StringIO.new
-      l = FeldtRuby::Logger.new sio
+      l = FeldtRuby::EventLogger.new sio
 
       t0 = Time.now
       sleep 0.01
@@ -401,7 +426,7 @@ describe "Adding logging to an object and its instance vars" do
 
   it 'sets up the sam logger in both A objects and their instance vars' do
 
-    @a.logger.must_be_instance_of FeldtRuby::Logger
+    @a.logger.is_a?(FeldtRuby::Logger).must_equal true
 
     @b.logger.must_equal @a.logger
 
@@ -409,7 +434,7 @@ describe "Adding logging to an object and its instance vars" do
 
   it 'uses an explicit logger supplied to a instance var also in the using object' do
 
-    l = FeldtRuby::Logger.new
+    l = FeldtRuby::EventLogger.new
     b = B.new l
     a = A.new b
 

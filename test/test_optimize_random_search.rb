@@ -1,23 +1,6 @@
 require 'feldtruby/optimize/random_search'
 require 'feldtruby/array/basic_stats'
 
-
-unless defined?(MinimizeRMS)
-	class MinimizeRMS < FeldtRuby::Optimize::Objective
-		def objective_min_rms(candidate)
-			candidate.rms
-		end
-	end
-end
-
-unless defined?(MinimizeRMSAndSum)
-	class MinimizeRMSAndSum < MinimizeRMS
-		def objective_min_sum(candidate)
-			candidate.sum.abs
-		end
-	end
-end
-
 class TestRandomSearcher < MiniTest::Unit::TestCase
 	def setup
 		@s2 = FeldtRuby::Optimize::SearchSpace.new_symmetric(2, 1)
