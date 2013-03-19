@@ -6,7 +6,7 @@ require 'feldtruby/logger'
 module FeldtRuby::Optimize
 
 # Common to many Evolutionary Computation optimizers
-class EvolutionaryOptimizer < PopulationBasedOptimizer; end
+class EvolutionaryOptimizer < FeldtRuby::Optimize::PopulationBasedOptimizer; end
 
 # Base class for Differential Evolution (DE) for continuous, real-valued optimization.
 # Since there are many different DE variants this is the base class
@@ -63,7 +63,7 @@ class DEOptimizerBase < EvolutionaryOptimizer
 
 		# Supplant the target vector with the trial vector if better
 		if best.first != target
-			log "Trial vector was better", :new_better, {:better => best[0], :quality => best[1], :sub_qualities => best[2]}
+			log "Trial vector was better, #{best[0].inspect}", :new_better, {:better => best[0], :quality => best[1], :sub_qualities => best[2]}
 			trial_better = true
 			update_candidate_in_population(target_index, trial)
 		else
@@ -182,6 +182,28 @@ class DEOptimizer < DEOptimizerBase
 	include DE_UpdateStrategy_NoFeedbackUpdates
 	include DE_CrossoverStrategy_Binomial
 	include DE_MutationStrategy_Rand_1
+end
+
+# Optimize the _numVariables_ between the _min_ and _max_ values given _costFunction_.
+# Default is to minimize.
+def self.optimize(min, max, options = {:verbose => true}, 
+	objectiveFuncClass = FeldtRuby::Optimize::ObjectiveMinimizeBlock, &costFunction)
+	objective = objectiveFuncClass.new(&costFunction)
+	num_vars = costFunction.arity
+	search_space = SearchSpace.new_from_min_max(num_vars, min, max)
+	optimizer = DEOptimizer.new(objective, search_space, options)
+	optimizer.optimize()
+	optimizer.best.to_a
+end
+
+# Short hand wrapper for function minimization.
+def self.minimize(min, max, options = {}, &costFunction)
+	optimize(min, max, options, &costFunction)
+end
+
+# Short hand wrapper for function maximization.
+def self.maximize(min, max, options = {}, &costFunction)
+	optimize(min, max, options, FeldtRuby::Optimize::ObjectiveMaximizeBlock, &costFunction)
 end
 
 end

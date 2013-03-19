@@ -5,16 +5,13 @@ require 'feldtruby/time'
 
 module FeldtRuby
 
-# A structured logging object that logs events. Events are time-stamped
-# objects that have type and can contain arbitrary data. A logger can have
-# multiple IO streams to which it logs events. With each event data can be
-# saved.
-#
-# This default logger saves events locally in a hash. 
+# Simplest possible logger only prints to STDOUT.
 class Logger
   DefaultParams = {
-    :verbose => true
+    :verbose => false
   }
+
+  UnixEpoch = Time.at(0)
 
   def initialize(io = STDOUT, params = DefaultParams)
 
@@ -32,13 +29,9 @@ class Logger
 
   end
 
-  def verbose=(flag)
-    @params[:verbose] = flag
-  end
-
-  # Return the number of events of type _eventType_.
-  def num_events eventType = nil
-    events(eventType).length
+  # Set up the internal data store.
+  def setup_data_store
+    @values = Hash.new {|h,k| h[k] = Hash.new}
   end
 
   # Return the elapsed time since the logger was started.
@@ -46,12 +39,81 @@ class Logger
     t - @start_time
   end
 
+  def verbose=(flag)
+    @params[:verbose] = flag
+  end
+
   # Add one more _io_ stream to which events are logged.
   def add_io io
-
     @ios << io
     @ios.uniq
+  end
 
+  def log message, eventType = nil, data = {}, saveMessageInData = true, printFrequency = 0.0
+
+    print_message_if_needed message, eventType, printFrequency
+
+  end
+
+  # Log a _newValue_ for the _eventType_. Optionally a message and a name
+  # for a metric can be given but if not we use sensible defaults.
+  def log_value eventType, newValue, message = nil, metric = :_v, printFrequency = 0.0
+
+    @values[eventType][metric] = newValue
+
+    message = "Value changed to #{newValue.inspect}" if message == nil
+
+    log message, eventType, {metric => newValue}, false, printFrequency
+
+  end
+
+  def current_value eventType, metric = :_v
+    @values[eventType][metric]
+  end
+
+  def print_message_if_needed message, eventType, printFrequency, time = Time.now
+
+    # We only print if enough time since last time we printed. This way
+    # we avoid "flooding" the user with log messages.
+    if (time - @last_time_printed_for_event_type[eventType]) >= printFrequency
+
+      io_puts log_entry_description(message, eventType), time
+      @last_time_printed_for_event_type[eventType] = time
+
+    end
+  end
+
+  # Puts the given _message_ on the io stream(s) stamped with the given time.
+  def io_puts message, time = Time.now
+
+    return unless @params[:verbose]
+
+    s = time.strftime("%H:%M.%S%3N, ") + message
+
+    @ios.each {|io| io.puts s}
+
+  end
+
+    # Prepend a tag describing the event type to _str_.
+  def log_entry_description str, eventType = nil
+
+    event_tag = eventType ? "{#{eventType.to_s}}: " : ""
+
+    event_tag + str
+
+  end
+end
+
+# A structured logging object that logs events. Events are time-stamped
+# objects that have type and can contain arbitrary data. A logger can have
+# multiple IO streams to which it logs events. With each event data can be
+# saved.
+#
+# This default logger saves events locally in a hash. 
+class EventLogger < Logger
+  # Return the number of events of type _eventType_.
+  def num_events eventType = nil
+    events(eventType).length
   end
 
   # Events are time-stamped hashes of ruby values with a named type (given
@@ -148,12 +210,7 @@ class Logger
 
     end
 
-    # We only print if enough time since last time we printed. This way
-    # we avoid "flooding" the user with log messages.
-    if (time - @last_time_printed_for_event_type[eventType]) >= printFrequency
-      io_puts log_entry_description(message, eventType), time
-      @last_time_printed_for_event_type[eventType] = time
-    end
+    print_message_if_needed message, eventType, printFrequency, time
 
     event
 
@@ -201,8 +258,6 @@ class Logger
     event.data[metric]
 
   end
-
-  UnixEpoch = Time.at(0)
 
   # Return the values at each _step_ between _start_ (inclusive) and _stop_
   # (exclusive) for _eventType_ and _metric_. Both _start_, _stop_ can be 
@@ -312,30 +367,10 @@ class Logger
 
   end
 
-  # Puts the given _message_ on the io stream(s) stamped with the given time.
-  def io_puts message, time = Time.now
-
-    return unless @params[:verbose]
-
-    s = time.strftime("%H:%M.%S%3N, ") + message
-
-    @ios.each {|io| io.puts s}
-
-  end
-
   # Save the event in the data store.
   def save_event event
     @events[event.type] << event
     event
-  end
-
-  # Prepend a tag describing the event type to _str_.
-  def log_entry_description str, eventType = nil
-
-    event_tag = eventType ? "{#{eventType.to_s}}: " : ""
-
-    event_tag + str
-
   end
 
   def description_for_metric_change newValue, oldValue, eventType, metric
@@ -382,7 +417,7 @@ module Logging
     #  3. First one found on an instance var
     #  4. Create a new standard one
     self.logger = logger || self.logger || find_logger_set_on_instance_vars() ||
-      FeldtRuby::Logger.new
+      new_default_logger()
 
     # Now distribute the preferred logger to all instance vars, recursively.
     self.instance_variables.each do |ivar_name|
@@ -395,6 +430,11 @@ module Logging
 
     end
 
+  end
+
+  # Override to use another logger as default if no logger is found.
+  def new_default_logger
+    FeldtRuby::EventLogger.new # This is currently MUCH slower than Logger...
   end
 
   def find_logger_set_on_instance_vars

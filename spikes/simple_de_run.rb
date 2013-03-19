@@ -12,6 +12,11 @@ class MinimizeRMSAndSum < MinimizeRMS
   def objective_min_sum(candidate)
     candidate.sum.abs
   end
+
+#  def new_default_logger
+    # A simple logger which only prints to stdout.
+#    FeldtRuby::Logger.new(STDOUT)
+#  end
 end
 
 include FeldtRuby::Optimize
@@ -20,6 +25,6 @@ s4 = SearchSpace.new_symmetric(4, 1)
 
 o2 = MinimizeRMSAndSum.new
 
-de = DEOptimizer.new(o2, s4, {:verbose => true, :maxNumSteps => 2_000})
+de = DEOptimizer.new(o2, s4, {:verbose => true, :maxNumSteps => 10_000})
 
 de.optimize()

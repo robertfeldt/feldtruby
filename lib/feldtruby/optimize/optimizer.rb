@@ -6,9 +6,10 @@ require 'feldtruby/math/rand'
 require 'feldtruby/array'
 require 'feldtruby/logger'
 
-module FeldtRuby::Optimize 
+module FeldtRuby
+
+module Optimize 
 	DefaultOptimizationOptions = {
-		:maxNumSteps => 10_000,
 		:terminationCriterionClass => FeldtRuby::Optimize::MaxStepsTerminationCriterion,
 		:verbose => false,
 		:populationSize => 100,
@@ -23,7 +24,7 @@ end
 
 # Find an vector of float values that optimizes a given
 # objective.
-class FeldtRuby::Optimize::Optimizer
+class Optimize::Optimizer
 	include FeldtRuby::Logging
 
 	attr_reader :objective, :search_space, :best, :best_quality_value, :best_sub_quality_values, :num_optimization_steps, :termination_criterion
@@ -55,14 +56,14 @@ class FeldtRuby::Optimize::Optimizer
 			while !termination_criterion.terminate?(self)
 				new_candidates = optimization_step()
 				@num_optimization_steps += 1
-				log_value :NumOptimizationSteps, @num_optimization_steps
+				#log_value :NumOptimizationSteps, @num_optimization_steps # This takes a loooong time if using EventLogger. Need to simplify!
 				update_best(new_candidates)
 			end
 		rescue Exception => e
 			log( "!!! - Optimization FAILED with exception: #{e.message} - !!!" + e.backtrace.join("\n"), 
 				:exception, {:exception_class => e.class.inspect, :backtrace => e.backtrace.join("\n")} )
 		ensure
-			log_value :num_steps_when_stopped, @num_optimization_steps,
+			log_value :NumOptimizationSteps, @num_optimization_steps,
 				"!!! - Optimization FINISHED after #{@num_optimization_steps} steps - !!!"
 		end
 		@objective.note_end_of_optimization(self)
@@ -176,4 +177,6 @@ class FeldtRuby::Optimize::PopulationBasedOptimizer < FeldtRuby::Optimize::Optim
 	def update_candidate_in_population(index, candidate)
 		@population[index] = candidate
 	end
+end
+
 end

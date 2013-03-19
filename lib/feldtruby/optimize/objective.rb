@@ -2,6 +2,7 @@ require 'feldtruby/optimize'
 require 'feldtruby/float'
 require 'feldtruby/optimize/sub_qualities_comparators'
 require 'feldtruby/logger'
+require 'feldtruby/float'
 
 module FeldtRuby::Optimize
 
@@ -280,8 +281,8 @@ class Objective
 	def log_new_min_max(index, newValue, oldValue, description)
 		log("New global #{description} for sub-objective #{aspect_methods[index]}\n" +
 			("a %.3f" % (100.0 * (newValue - oldValue).protected_division_with(oldValue))) + "% difference\n" +
-			"new = #{newValue}, old = #{oldValue}\n" +
-			"scale is now [#{global_min_values_per_aspect[index]}, #{global_max_values_per_aspect[index]}]\n" +
+			"new = #{newValue.to_significant_digits(4)}, old = #{oldValue.to_significant_digits(4)}\n" +
+			"scale is now [#{global_min_values_per_aspect[index].to_significant_digits(4)}, #{global_max_values_per_aspect[index].to_significant_digits(4)}]\n" +
 			"objective version = #{current_version}")
 		log_value ("new_#{description}_#{aspect_methods[index]}").intern, newValue
 	end
