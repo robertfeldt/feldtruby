@@ -292,9 +292,9 @@ module FeldtRuby::Statistics::Plotting
   def scatter_plot(csvFilePath, xlabel, ylabel, title = "scatterplot")
 
     script = <<-EOS
-      # smoothing_method <- if(nrow(data) > 1000) {'gam'} else {'loess'}
+      smoothing_method <- if(nrow(data) > 1000) {'gam'} else {'loess'}
       f <- ggplot(data, aes(#{xlabel}, #{ylabel})) + geom_point(shape = 1)
-      f <- f + stat_smooth()
+      f <- f + stat_smooth(method = smoothing_method)
     EOS
 
     plot_2dims(csvFilePath, script, xlabel.to_s, ylabel.to_s, title)
