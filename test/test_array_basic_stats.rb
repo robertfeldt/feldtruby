@@ -136,7 +136,7 @@ describe "Basic statistics" do
 
 	describe "summary_stats" do
 		it "gives a nice string with descriptive statistics" do
-			[1,2,3,4].summary_stats.must_equal "2.500 (min = 1.0, max = 4.0, median = 2.5, stdev = 1.12)"
+			[1,2,3,4].summary_stats.must_equal "2.5 (min = 1, max = 4, median = 2.5, stdev = 1.12)"
 		end
 
 		it "returns an empty string if there are no values" do

@@ -2,6 +2,7 @@ require 'stringio'
 require 'time'
 require 'feldtruby/array/basic_stats'
 require 'feldtruby/time'
+require 'feldtruby/float'
 
 module FeldtRuby
 
@@ -380,7 +381,9 @@ class EventLogger < Logger
 
     summary = summary_stats eventType, metric
 
-    "#{format_number(oldValue)} -> #{format_number(newValue)}#{pcs}, mean = #{summary}"
+    ovstr = oldValue ? oldValue.to_significant_digits(3).to_s : ""
+
+    "#{ovstr} -> #{newValue.to_significant_digits(3)}#{pcs}, mean = #{summary}"
 
   end
 
@@ -391,15 +394,7 @@ class EventLogger < Logger
   def percent_change oldValue, newValue
     return nil if oldValue.nil?
     sign = (oldValue < newValue) ? "+" : ""
-    "#{sign}%.1f%%" % ((newValue - oldValue) / oldValue.to_f * 100.0)
-  end
-
-  def format_number number, digits = 3
-    if Float === number
-      "%.#{digits}f" % number
-    else
-      number.to_s
-    end
+    "#{sign}%.3g%%" % ((newValue - oldValue) / oldValue.to_f * 100.0)
   end
 end
 

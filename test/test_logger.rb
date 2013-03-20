@@ -199,7 +199,7 @@ describe 'EventLogger' do
 
     @l.log_value(:Fitness, 1.0)
 
-    expected1 = "{Fitness}:  -> 1.000, mean = 1.000 (min = 1.0, max = 1.0, median = 1.0, stdev = 0.00)\n"
+    expected1 = "{Fitness}:  -> 1.0, mean = 1 (min = 1, max = 1, median = 1, stdev = 0)\n"
     @sio.string[13..-1].must_equal expected1
 
     @l.current_value(:Fitness).must_equal 1.0
@@ -208,21 +208,21 @@ describe 'EventLogger' do
 
     @l.current_value(:Fitness).must_equal 1.2
 
-    expected2 = "{Fitness}: 1.000 -> 1.200 (+20.0%), mean = 1.100 (min = 1.0, max = 1.2, median = 1.1, stdev = 0.10)"
+    expected2 = "{Fitness}: 1.0 -> 1.2 (+20%), mean = 1.1 (min = 1, max = 1.2, median = 1.1, stdev = 0.1)"
     @sio.string.split("\n").last[13..-1].must_equal expected2
 
     @l.log_value(:Fitness, 0.9)
 
     @l.current_value(:Fitness).must_equal 0.9
 
-    expected3 = "{Fitness}: 1.200 -> 0.900 (-25.0%), mean = 1.033 (min = 0.9, max = 1.2, median = 1.0, stdev = 0.12)"
+    expected3 = "{Fitness}: 1.2 -> 0.9 (-25%), mean = 1.03 (min = 0.9, max = 1.2, median = 1, stdev = 0.125)"
     @sio.string.split("\n").last[13..-1].must_equal expected3
 
     @l.current_value(:F).must_equal nil
 
     @l.log_value(:F, 42.0)
 
-    expected4 = "{F}:  -> 42.000, mean = 42.000 (min = 42.0, max = 42.0, median = 42.0, stdev = 0.00)"
+    expected4 = "{F}:  -> 42.0, mean = 42 (min = 42, max = 42, median = 42, stdev = 0)"
     @sio.string.split("\n").last[13..-1].must_equal expected4
 
   end

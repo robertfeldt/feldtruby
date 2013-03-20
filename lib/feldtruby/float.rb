@@ -15,14 +15,26 @@ class Numeric
 		(self - other).protected_division_with(other)
 	end
 
+	# Change to a float with a given number of significant digits.
+	def signif(numDigits = 3)
+		self.to_f.signif(numDigits)
+	end
+
+	# Change to a float with a given number of significant digits.
 	def to_significant_digits(numDigits = 3)
 		self.to_f.to_significant_digits(numDigits)
 	end
 end
 
 class Float
-	def to_significant_digits(numDigits = 3)
+	# Change to a float with a given number of significant digits.
+	def signif(numDigits = 3)
 		return self if self == INFINITY || self == -INFINITY
 		Float("%.#{numDigits}g" % self)
+	end
+
+	# Change to a float with a given number of significant digits.
+	def to_significant_digits(numDigits = 3)
+		signif(numDigits)
 	end
 end
