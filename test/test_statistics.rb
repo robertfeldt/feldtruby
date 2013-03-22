@@ -210,7 +210,7 @@ describe "Plotting" do
   it 'can load data from a csv file path given in hash' do
 
     s = RC.load_csv_files_as_data( {:a => "f.csv"}, "c" )
-    expected = "d0 <- read.csv(\"f.csv\");\ndf <- data.frame(1:length(d0), a = d0$c);"
+    expected = "d_a <- read.csv(\"f.csv\");\ndata <- data.frame(1:length(d_a), a = d_a$c);"
     s.must_equal expected
 
   end
@@ -218,7 +218,7 @@ describe "Plotting" do
   it 'can load data from several csv file paths given in hash' do
 
     s = RC.load_csv_files_as_data( {:a => "f1.csv", :b => "f2.csv", :c => "f3.csv"}, "d" )
-    expected = "d0 <- read.csv(\"f1.csv\");\nd1 <- read.csv(\"f2.csv\");\nd2 <- read.csv(\"f3.csv\");\ndf <- data.frame(1:length(d0), a = d0$d, b = d1$d, c = d2$d);"
+    expected = "d_a <- read.csv(\"f1.csv\");\nd_b <- read.csv(\"f2.csv\");\nd_c <- read.csv(\"f3.csv\");\ndata <- data.frame(1:length(d_a), a = d_a$d, b = d_b$d, c = d_c$d);"
     s.must_equal expected
 
   end
@@ -226,7 +226,7 @@ describe "Plotting" do
   it 'loads data from vector if given in array in hash' do
 
     s = RC.load_csv_files_as_data( {:a => [1,2], :b => [3, 4]} )
-    expected = "d0 <- c(1, 2);\nd1 <- c(3, 4);\ndf <- data.frame(1:length(d0), a = d0, b = d1);"
+    expected = "d_a <- c(1, 2);\nd_b <- c(3, 4);\ndata <- data.frame(1:length(d_a), a = d_a, b = d_b);"
     s.must_equal expected
 
   end

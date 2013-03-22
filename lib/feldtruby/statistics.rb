@@ -302,16 +302,21 @@ module FeldtRuby::Statistics::Plotting
 
   end
 
-  def load_csv_files_as_data(hashWithDataInArrayOrCvsFilePaths, columnName = nil)
+  # Data can be specified in two ways, either directly in Ruby arrays,
+  # or as strings with the path to a csv file to be loaded. In the latter
+  # case a column name must be given.
+  def load_csv_files_as_data(dataMap, columnName = nil)
+
+    keys = dataMap.keys.sort
 
     read_csvs = ""
-    data_frame = "data.frame(1:length(d0)"
+    data_frame = "data.frame(1:length(d_#{keys.first})"
 
-    hashWithDataInArrayOrCvsFilePaths.keys.each_with_index do |key, i|
+    keys.each_with_index do |key, i|
 
-      value = hashWithDataInArrayOrCvsFilePaths[key]
+      value = dataMap[key]
 
-      set_name = "d#{i}"
+      set_name = "d_#{key}"
       
       read_csvs += "#{set_name} <- "
 
@@ -327,7 +332,7 @@ module FeldtRuby::Statistics::Plotting
 
     data_frame += ")"
 
-    script = "#{read_csvs}df <- #{data_frame};"
+    script = "#{read_csvs}data <- #{data_frame};"
 
   end
 
