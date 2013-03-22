@@ -162,6 +162,7 @@ module Statistics
   end
 
   def chi_squared_test(aryOrHashOfCounts)
+    puts "aryOrHashOfCounts = #{aryOrHashOfCounts}"
     counts = (Hash === aryOrHashOfCounts) ? aryOrHashOfCounts : aryOrHashOfCounts.counts
     vs = counts.values
     res = RC.call("chisq.test", vs)
@@ -301,6 +302,46 @@ module FeldtRuby::Statistics::Plotting
 
   end
 
+  def load_csv_files_as_data(hashWithDataInArrayOrCvsFilePaths, columnName = nil)
+
+    read_csvs = ""
+    data_frame = "data.frame(1:length(d0)"
+
+    hashWithDataInArrayOrCvsFilePaths.keys.each_with_index do |key, i|
+
+      value = hashWithDataInArrayOrCvsFilePaths[key]
+
+      set_name = "d#{i}"
+      
+      read_csvs += "#{set_name} <- "
+
+      if Array === value
+        read_csvs += (ruby_object_to_R_string(value) + ";\n")
+        data_frame += ", #{key} = #{set_name}"
+      else
+        read_csvs += "read.csv(#{value.inspect});\n"
+        data_frame += ", #{key} = #{set_name}$#{columnName}"
+      end
+
+    end
+
+    data_frame += ")"
+
+    script = "#{read_csvs}df <- #{data_frame};"
+
+  end
+
+  def density_tile2d(csvFilePath, xlabel, ylabel, title = "densitytile2d")
+
+    script = <<-EOS
+      f <- ggplot(data, aes(x=#{xlabel}, y=#{ylabel}))
+      f <- f + stat_density2d(geom="tile", aes(fill=..density..), contour=FALSE) + scale_fill_gradient(high="red", low="white")
+    EOS
+
+    plot_2dims(csvFilePath, script, xlabel.to_s, ylabel.to_s, title)
+
+  end
+
   GfxFormatToGfxParams = {
     "pdf" => {:width => 7, :height => 5, :paper => 'special'},
     "png" => {:units => "cm", :width => 12, :height => 8},
@@ -374,6 +415,37 @@ module FeldtRuby::Statistics::Plotting
 
   end
 
+  # Plot the densities of the data found in the column named _columnName_
+  # in the csv files in _csvFiles_.
+  def overlaid_densities_from_csv_files(columnName, csvFiles, title = "Densities of distributions", datasetsName = "distribution", xlabel = "values", ylabel = "density")
+
+    read_csvs = ""
+    data_frame = "data.frame(1:length(data0)"
+
+    csvFiles.each_with_index do |csvfile, i|
+      set_name = "data#{i}"
+      read_csvs += "#{set_name} <- read.csv(#{csvfile.inspect}); "
+      data_frame += ", d#{i} = #{set_name}$#{columnName}"
+    end
+    data_frame += ");"
+
+    script = <<-EOS
+      #{read_csvs}
+      df <- #{data_frame}
+      #df <- data.frame(index = (1:#{cardinalities.first}), #{hash_to_R_params(dataMap)})
+      df.m <- melt(df, id = "index")
+      names(df.m)[2] <- _datasetsName_
+      f <- ggplot(df.m, aes(value, fill=#{datasetsName}))
+      f <- f + geom_density(alpha = 0.2, size = 0.5) + scale_color_brewer()
+      #{ggplot2_setup_and_theme()}
+      f
+    EOS
+
+    puts script
+    subst_eval script, {:title => title, :datasetsName => datasetsName,
+      :xlabel => xlabel, :ylabel => ylabel}
+
+  end
 end
 
 class FeldtRuby::RCommunicator
