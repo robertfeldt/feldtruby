@@ -41,3 +41,26 @@ describe "all pairs of elements from an array" do
   end
 
 end
+
+describe 'all combinations of elements from sub-arrays' do
+  it 'returns an empty array if no sub-arrays given' do
+    [].all_combinations_one_from_each.must_equal []
+  end
+
+  it 'can handle the case with only one sub-array' do
+    [[1]].all_combinations_one_from_each.must_equal [[1]]
+    [[1, 2]].all_combinations_one_from_each.must_equal [[1], [2]]
+  end
+
+  it 'can handle a simple, basic example' do
+    [[1,2], [3]].all_combinations_one_from_each.must_equal [[1,3], [2,3]]
+  end
+
+  it 'can handle the case of two sub-arrays of two elements each' do
+    [[1,2], [3,7]].all_combinations_one_from_each.must_equal [[1,3], [2,3], [1,7], [2,7]]
+  end
+
+  it 'can handle the case of two sub-arrays of two and three elements, respectively' do
+    [[1,2,3], [4,5]].all_combinations_one_from_each.must_equal [[1,4], [2,4], [3,4], [1,5], [2,5], [3,5]]
+  end
+end
