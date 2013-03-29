@@ -3,193 +3,332 @@ require 'feldtruby/float'
 require 'feldtruby/optimize/sub_qualities_comparators'
 require 'feldtruby/logger'
 require 'feldtruby/float'
+require 'feldtruby/annotations'
+
+# Make all Ruby objects Annotateable so we can attach information to the 
+# individuals being optimized.
+class Object
+	include FeldtRuby::Annotateable
+end
 
 module FeldtRuby::Optimize
 
-# An Objective captures one or more (sub-)objectives into a single object
-# and supports a large number of ways to utilize basic objective
-# functions in a single framework. You subclass and add instance
-# methods named as 
-#   objective_min_qualityAspectName (for an objective/aspect to be minimized), or 
-#   objective_max_qualityAspectName (for an objective/aspect to be minimized).
+# An Objective maps candidate solutions to qualities so they can be compared and
+# ranked. 
 #
-# There can be multiple aspects (sub-objectives) for a single objective.
+# One objective can have one or more sub-objectives, called goals. Each goal
+# is specified as a separate method and its name indicates if the returned
+# Numeric should be minimized or maximized. To create your own objective
+# you subclass and add instance methods named as 
+#   goal_min_qualityAspectName (for a goal value to be minimized), or 
+#   goal_max_qualityAspectName (for a goal value to be minimized).
 #
 # An objective keeps track of the min and max value that has been seen so far
-# for each sub-objective.
-
-# This base class uses mean-weighted-global-ratios (MWGR) as the default mechanism
-# for handling multi-objectives i.e. with more than one sub-objective.
-#
+# for each goal.
 # An objective has version numbers to indicate the number of times a new min or max
-# value has been identified for a sub-objective.
+# value has been identified for a goal.
+#
+# This base class uses weigthed sum as the quality mapper and number comparator
+# as the comparator. But the mapper and comparator to be used can, of course,
+# be changed.
 class Objective
 	include FeldtRuby::Logging
 
-	# Current version of this objective. Is updated when the min or max values for a sub-objective
-	# has been updated.
+	# Current version of this objective. Is updated when the min or max values 
+	# for a sub-objective has been updated or when the weights are changed. 
+	# Candidates are always compared based on the latest version of an objective. 
 	attr_accessor :current_version
 
-	def initialize
-		@current_version = 0
-		@pareto_front = Array.new(num_aspects) # The pareto front is misguided since it only has one best value per sub-objective, not the whole front!
+	# A quality mapper maps the goal values of a candidate to a single number.
+	attr_accessor :quality_mapper
+
+	# A comparator compares two or more candidates and ranks them based on their
+	# qualities.
+	attr_accessor :comparator
+
+	attr_reader :global_min_values_per_aspect, :global_max_values_per_aspect
+
+	def initialize(qualityMapper = nil, comparator = nil)
+
+		@quality_mapper = qualityMapper || WeightedSumQualityMapper.new
+		@comparator = comparator || Comparator.new
+		@quality_mapper.objective = self
+		@comparator.objective = self
+
+		self.current_version = 0
+
+		# We set all mins to INFINITY. This ensures that the first value seen will
+		# be smaller, and thus set as the new min.
+		@global_min_values_per_aspect = [Float::INFINITY] * num_goals
+
+		# We set all maxs to -INFINITY. This ensures that the first value seen will
+		# be larger, and thus set as the new max.
+		@global_max_values_per_aspect = [-Float::INFINITY] * num_goals
 
 		setup_logger_and_distribute_to_instance_variables()
+
 	end
 
-	# Return the number of aspects/sub-objectives of this objective.
-	def num_aspects
-		@num_aspects ||= aspect_methods.length
+	# Return the number of goals of this objective.
+	def num_goals
+		@num_goals ||= goal_methods.length
 	end
 
-	def num_sub_objectives
-		num_aspects
+	# Return the names of the goal methods.
+	def goal_methods
+		@goal_methods ||= self.methods.select {|m| is_goal_method?(m)}
 	end
 
-	def aspect_methods
-		@aspect_methods ||= self.methods.select {|m| is_aspect_method?(m)}
+	# Return true iff the goal method with the given index is a minimizing goal.
+	def is_min_goal?(index)
+		(@is_min_goal ||= (goal_methods.map {|m| is_min_goal_method?(m)}))[index]
 	end
 
-	def is_min_aspect?(aspectIndex)
-		(@is_min_aspect ||= (aspect_methods.map {|m| is_min_aspect_method?(m)}))[aspectIndex]
+	# Return true iff the method with the given name is a goal method.
+	def is_goal_method?(methodNameAsSymbolOrString)
+		(methodNameAsSymbolOrString.to_s =~ /^goal_(min|max)_([\w_]+)$/) != nil
 	end
 
-	def is_aspect_method?(methodNameAsSymbolOrString)
-		methodNameAsSymbolOrString.to_s =~ /^objective_(min|max)_([\w_]+)$/
+	# Return true iff the method with the given name is a goal method.
+	def is_min_goal_method?(methodNameAsSymbolOrString)
+		(methodNameAsSymbolOrString.to_s =~ /^goal_min_([\w_]+)$/) != nil
 	end
 
-	def is_min_aspect_method?(methodNameAsSymbolOrString)
-		methodNameAsSymbolOrString.to_s =~ /^objective_min_([\w_]+)$/
-	end
-
-	# The vectors can be mapped to a more complex candidate object before we call
-	# the sub objectives to calc their quality values. Default is no mapping but subclasses
+	# The candidate objects can be mapped to another object before we call the goal
+	# methods to calc the quality values. Default is no mapping but subclasses
 	# can override this for more complex evaluation schemes.
-	def map_candidate_vector_to_candidate_to_be_evaluated(vector)
-		vector
+	def map_candidate_to_object_to_be_evaluated(candidate)
+		candidate
 	end
 
-	# Return a vector of the "raw" sub-quality values, i.e. the fitness value for each sub-objective.
-	# The candidate vector is assumed to be a vector of values.
-	def sub_qualities_of(candidateVector)
-		candidate = map_candidate_vector_to_candidate_to_be_evaluated(candidateVector)
-		aspect_methods.map {|omethod| self.send(omethod, candidate)}
+	# Weights is a map from goal method names to a number that represents the
+	# weight for that goal. Default is to set all weights to 1.
+	def weights
+		@weights ||= ([1] * num_goals)
 	end
 
-	# Return a single quality value for the whole objective for a given candidate. 
-	# By default this uses a variant of Bentley and Wakefield's sum-of-weighted-global-ratios (SWGR)
-	# called mean-of-weighted-global-ratios (MWGR) which always returns a fitness value
-	# in the range (0.0, 1.0) with 1.0 signaling the best fitness seen so far. The scale is adaptive
-	# though so that the best candidate so far always has a fitness value of 1.0.
-	def quality_of(candidate, weights = self.default_weights)
-		return candidate._quality_value_without_check if quality_value_is_up_to_date?(candidate)
-		num_aspects == 1 ? qv_single(candidate) : qv_mwgr(candidate, weights)
-	end
+	# Set the weights given a hash mapping each goal method name to a number.
+	# The mapper and/or comparator can use the weights in their calculations.
+	def weights=(goalNameToNumberHash)
 
-	# Set the default weights to use when calculating a single quality values from
-	# the vector of sub-qualities.
-	def default_weights=(weights)
-		raise "Must be same number of weights as there are sub-objectives (#{num_aspects}), but is #{weights.length}" unless weights.length == num_aspects
-		@default_weights = weights
-	end
+		raise "Must be same number of weights as there are goals (#{num_aspects}), but is #{weights.length}" unless weights.length == num_goals
 
-	# Current default weights among the sub-objectives (nil if none have been set)
-	attr_reader :default_weights
+		weights = goal_methods.map {|gm| goalNameToNumberHash[gm]}
 
-	# Return the fitness of a candidate. It is the same as the quality value above.
-	def fitness_for(candidate, weights = nil)
-		quality_of(candidate, weights)
-	end
-
-  #############################
-  # Sane above here!
-  #############################
-
-	def reset_quality_scale(candidate, aspectIndex, typeOfReset)
-		if (typeOfReset == :min && is_min_aspect?(aspectIndex)) || 
-		   (typeOfReset == :max && !is_min_aspect?(aspectIndex))
-			@pareto_front[aspectIndex] = candidate
-		end
-
-		# Reset the best object since we have a new scale
-		@best_candidate = nil
-		@best_qv = nil
+		#log_value( :objective_weights_changed, goalNameToNumberHash, 
+		#	"Weights updated from #{@weights} to #{weights}" )
 
 		inc_version_number
+
+		@weights = weights
+
 	end
 
-	def update_best_candidate(candidate)
+	# Return a vector of the "raw" quality values, i.e. the fitness value for each
+	# goal.
+	def sub_qualities_of(candidate, updateGlobals = true)
+		obj = map_candidate_to_object_to_be_evaluated(candidate)
+		sub_qualitites = goal_methods.map {|gmethod| self.send(gmethod, obj)}
+		update_global_mins_and_maxs(sub_qualitites, candidate) if updateGlobals
+		sub_qualitites
+	end
+
+	def default_weights
+		@default_weights ||= ([1.0] * num_goals)
+	end
+
+	# Return a quality value for a given candidate and weights for the whole 
+	# objective for a given candidate. Updates the best candidate if this
+	# is the best seen so far.
+	def quality_of(candidate, weights = self.default_weights)
+
+		q = quality_if_up_to_date?(candidate)
+		return q if q
+
+		sub_qualities = sub_qualities_of(candidate)
+
+		qv = update_quality_value_of candidate, sub_qualities, weights
+
+		update_best_candidate candidate, qv
+
+		qv
+
+	end
+
+	# Rank candidates from best to worst. Updates the quality value of each
+	# candidate.
+	def rank_candidates(candidates, weights = self.default_weights)
+
+		# Map each candidate to its sub-qualities without updating the globals.
+		# We will update once for the whole set below.
+		sqvss = candidates.map {|c| sub_qualities_of(c, false)}
+
+		# Update the global mins and maxs based on the set of sub-qualities.
+		# Note! This must be done once for the whole set otherwise when we later 
+		# compare the cnadidates based on their quality values they
+		# might be for different versions of the objective.
+		sqvss.each_with_index do |sqvs, i|
+			update_global_mins_and_maxs sqvs, candidates[i]
+		end
+
+		# Update the quality value of each candidate.
+		sqvss.each_with_index do |sqvs, i|
+			update_quality_value_of candidates[i], sqvs, weights
+		end
+
+		# Now use the comparator to rank the candidates.
+		comparator.rank_candidates candidates, weights
+
+	end
+
+	attr_reader :best_candidate
+
+	private
+
+	def update_quality_value_of(candidate, subQualities, weights)
+
+		q = quality_mapper.map_from_sub_qualities(subQualities, weights)
+
+		qv = QualityValue.new q, subQualities, candidate, self
+
+		update_quality_value_in_object candidate, qv
+
+	end
+
+	def update_best_candidate candidate, qv
+		if @best_candidate == nil || (qv < @best_quality_value)
+			set_new_best_candidate candidate, qv
+		end
+	end
+
+	def set_new_best_candidate candidate, qualityValue
+
 		@best_candidate = candidate
-		@best_qv = candidate._quality_value
+		@best_quality_value = qualityValue
+
+		#log_data :objective_new_best_candidate, {
+		#	:candidate => candidate,
+		#	:quality_value => qualityValue
+		#}, "New best candidate found"
+
 	end
 
 	def inc_version_number
-		@current_version += 1
+
+		new_version = @current_version + 1
+
+		#log_value :objective_version_number, new_version, 
+		#	"New version of objective:\n#{self.to_s}"
+
+		@current_version = new_version
+
 	end
 
-	def quality_value_is_up_to_date?(candidate)
-		candidate._objective == self && candidate._objective_version == current_version
+	# Update the min and max values for each goal in case the values in the
+	# supplied array are outside the previously seen min and max.
+	def update_global_mins_and_maxs subQualityValues, candidate
+		subQualityValues.each_with_index do |sqv,i| 
+			update_global_min_and_max(i, sqv, candidate)
+		end
+	end
+
+	# Update the global min and max for the goal method with _index_ if
+	# the _qValue_ is less than or
+	def update_global_min_and_max(index, qValue, candidate)
+		min = @global_min_values_per_aspect[index]
+		max = @global_max_values_per_aspect[index]
+
+		if qValue < min
+
+			@global_min_values_per_aspect[index] = qValue
+
+			reset_quality_scale candidate, index, :min
+
+		elsif qValue > max
+
+			@global_max_values_per_aspect[index] = qValue
+
+			reset_quality_scale candidate, index, :min
+
+		end
+	end
+
+	# Reset the quality scale if the updated min or max value
+	# was the best quality value seen for the goal with given _index_.
+	def reset_quality_scale(candidate, index, typeOfReset)
+
+		is_min = is_min_goal_method?(index)
+
+		if (typeOfReset == :min && is_min) || (typeOfReset == :max && !is_min)
+
+			@best_objects[index] = candidate
+
+			#log_data :objective_better_object_for_goal, {
+			#	:better_candidate => candidate,
+			#	:type_of_improvement => typeOfReset
+			#	}, "Better object found for goal #{goal_methods[i]}"
+
+			# Reset the best object since we have a new scale
+			@best_candidate = nil
+
+		end
+
+		inc_version_number
+
+	end
+
+	# Check if a candidates quality value according to this objective is
+	# up to date with the latest version of the objective.
+	def quality_if_up_to_date?(candidate)
+		qv = quality_in_object candidate
+		(!qv.nil? && qv.version == current_version) ? qv : nil
+	end
+
+	# Get the hash of annotations that we have done to this object.
+	def my_annotations(object)
+		object._annotations[self] ||= Hash.new
+	end
+
+	def quality_in_object(object)
+		my_annotations(object)[:quality]
 	end
 
 	def update_quality_value_in_object(object, qv)
-		object._objective = self
-		object._objective_version = current_version
-		object._quality_value_without_check = qv
+		my_annotations(object)[:quality] = qv
 	end
+end
 
-	def ensure_updated_quality_value(candidate)
-		return if quality_value_is_up_to_date?(candidate)
-		quality_value(candidate)
+# A QualityMapper maps a vector of quality values (for each individual goal of
+# an objective) into a single number on which the candidates can be compared.
+class Objective::QualityMapper
+	attr_accessor :objective
+
+	# Map an array of _sub_qualities_ to a single number given an array of weights.
+	# This default class just sums the quality values regardless of the weights.
+	def map_from_sub_qualities subQualityValues, weights
+		subQualityValues.sum
 	end
+end
 
-	def rank_candidates(candidates, weights = nil)
-		mwgr_rank_candidates(candidates, weights)
+# A WeightedSumMapper sums individual quality values, each multiplied with a
+# weight.
+class Objective::WeightedSumQualityMapper < Objective::QualityMapper
+	def map_from_sub_qualities subQualityValues, weights
+		sum = 0.0
+		subQualityValues.each_with_index do |qv, i|
+			sum += (qv * weights[i])
+		end
+		sum
 	end
+end
 
-	# Rand candidates from best to worst. NOTE! We do the steps of MWGR separately since we must
-	# update the global mins and maxs before calculating the SWG ratios.
-	def mwgr_rank_candidates(candidates, weights = nil)
-		sub_qvss = candidates.map {|c| sub_qualities_of(c)}
-		sub_qvss.zip(candidates).each {|sub_qvs, c| update_global_mins_and_maxs(sub_qvs, c)}
-		sub_qvss.each_with_index.map do |sub_qvs, i|
-			qv = mwgr_ratios(sub_qvs).weighted_mean(weights)
-			qv = QualityValue.new(qv, sub_qvs, self)
-			update_quality_value_in_object(candidates[i], qv)
-			[candidates[i], qv, sub_qvs]
-		end.sort_by {|a| -a[1]} # sort by the ratio values in descending order
-	end
-
-	def note_end_of_optimization(optimizer)
-		log "Objective reporting the Pareto front:\n" + info_pareto_front()
-	end
-
-	def info_pareto_front
-		@pareto_front.each_with_index.map do |c, i|
-			"Pareto front candidate for objective #{aspect_methods[i]}: #{map_candidate_vector_to_candidate_to_be_evaluated(c).inspect}"
-		end.join("\n")
-	end
-
-	# Return the quality value assuming this is a single objective.
-	def qv_single(candidate)
-		qv = self.send(aspect_methods.first, 
-			map_candidate_vector_to_candidate_to_be_evaluated(candidate))
-		update_quality_value_in_object(candidate, qv)
-		qv
-	end
-
-	# Mean-of-weigthed-global-ratios (MWGR) quality value
-	def qv_mwgr(candidate, weights = nil)
-		mwgr_rank_candidates([candidate], weights).first[1]
-	end
-
-	# Calculate the SWGR ratios
-	def mwgr_ratios(subObjectiveValues)
-		subObjectiveValues.each_with_index.map {|v,i| ratio_for_aspect(i, v)}
-	end
-
-	def ratio_for_aspect(aspectIndex, value)
-		min, max = global_min_values_per_aspect[aspectIndex], global_max_values_per_aspect[aspectIndex]
-		if is_min_aspect?(aspectIndex)
+# A MeanWeigthedGlobalRatioMapper implements Bentley's MWGR multi-objective
+# fitness mapping scheme as described in the paper:
+#  Bentley ....
+# It is a weighted mean of the ratios the scales of each goal.
+class Objective::MeanWeigthedGlobalRatioMapper < Objective::WeightedSumQualityMapper
+	def ratio(index, value, min, max)
+		if objective.is_min_aspect?(index)
 			numerator = max - value
 		else
 			numerator = value - min
@@ -197,114 +336,64 @@ class Objective
 		numerator.to_f.protected_division_with(max - min)
 	end
 
-	def update_global_mins_and_maxs(aspectValues, candidate = nil)
-		aspectValues.each_with_index {|v, i| update_global_min_and_max(i, v, candidate)}
-	end
+	def map_from_sub_qualities subQualityValues, weights
+		goal_mins = objective.global_min_values_per_goal
+		goal_maxs = objective.global_max_values_per_goal
 
-	def update_global_min_and_max(aspectIndex, value, candidate)
-		min = global_min_values_per_aspect[aspectIndex]
-		if value < min
-			reset_quality_scale(candidate, aspectIndex, :min)
-			global_min_values_per_aspect[aspectIndex] = value
-			log_new_min_max(aspectIndex, value, min, "min")
-		end
-		max = global_max_values_per_aspect[aspectIndex]
-		if value > max
-			reset_quality_scale(candidate, aspectIndex, :max)
-			global_max_values_per_aspect[aspectIndex] = value
-			log_new_min_max(aspectIndex, value, max, "max")
-		end
-	end
-
-	# Class for representing multi-objective qualitites...
-	class QualityValue
-		attr_reader :qv, :sub_qvs, :objective
-
-		def initialize(qv, subQvs, objective)
-			@qv, @sub_qvs, @objective = qv, subQvs, objective
-			@version = objective.current_version
+		ratios = subQualityValues.map_with_index do |v, i| 
+			ratio i, v, goal_mins[i], goal_maxs[i]
 		end
 
-		def <=>(other)
-			@qv <=> other.qv
-		end
-
-		# Two quality values are the same if they have the same qv, regardless of their
-		# sub qualities.
-		def ==(other)
-			other = other.qv if QualityValue === other
-			@qv == other
-		end
-
-		def improvement_in_relation_to(other)
-			if QualityValue === other
-				pdiff = @qv.ratio_diff_vs(other.qv)
-				subpdiffs = @sub_qvs.zip(other.sub_qvs).map {|s, os| s.ratio_diff_vs(os)}
-				qinspect(pdiff, subpdiffs, "Difference", "SubQ. differences", true) + ", #{report_on_num_differences(subpdiffs)}"
-			else
-				@qv.improvement_in_relation_to(other)
-			end
-		end
-
-		def report_on_num_differences(subQvRatioDiffs)
-			num_inc = subQvRatioDiffs.select {|v| v > 0}.length
-			num_dec = subQvRatioDiffs.select {|v| v < 0}.length
-			num_same = subQvRatioDiffs.length - num_inc - num_dec
-			"#{num_inc} increased, #{num_dec} decreased, #{num_same} same"
-		end
-
-		def qinspect(qv, subQvs, qvDesc = "Quality", subQvDesc = "SubQualities", subQvsAreRatios = false, qvIsRatio = true)
-			subQvs = subQvs.map {|v| v*100.0} if subQvsAreRatios
-			sqs = subQvs.map do |sqv| 
-				s = (Float === sqv ? sqv.round_to_decimals(4) : sqv).inspect
-				s += "%" if subQvsAreRatios
-				s
-			end.join(", ")
-			if qvIsRatio
-				qstr = ("%.4f" % (100.0 * qv)) + "%"
-			else
-				qstr = "%.4f" % qv
-			end
-			"#{qvDesc}: #{qstr}, #{subQvDesc}: [#{sqs}]"
-		end
-
-		def inspect
-			qinspect(@qv, @sub_qvs) + ", Obj. version: #{@version}"
-		end
-
-		# Refer all other methods to the main quality value
-		def method_missing(meth, *args, &block)
-			@qv.send(meth, *args, &block)
-    end
-	end
-
-	def log_new_min_max(index, newValue, oldValue, description)
-		log("New global #{description} for sub-objective #{aspect_methods[index]}\n" +
-			("a %.3f" % (100.0 * (newValue - oldValue).protected_division_with(oldValue))) + "% difference\n" +
-			"new = #{newValue.to_significant_digits(4)}, old = #{oldValue.to_significant_digits(4)}\n" +
-			"scale is now [#{global_min_values_per_aspect[index].to_significant_digits(4)}, #{global_max_values_per_aspect[index].to_significant_digits(4)}]\n" +
-			"objective version = #{current_version}")
-		log_value ("new_#{description}_#{aspect_methods[index]}").intern, newValue
-	end
-
-	# Global min values for each aspect. Needed for SWGR. Updated every time we see a new
-	# quality value for an aspect.
-	# All are minus infinity when we have not seen any values yet.
-	def global_min_values_per_aspect
-		@global_min_values_per_aspect ||= Array.new(num_aspects).map {Float::INFINITY}
-	end
-
-	# Global max values for each aspect. Needed for SWGR. Updated every time we see a new
-	# quality value for an aspect.
-	# All are minus infinity when we have not seen any values yet.
-	def global_max_values_per_aspect
-		@global_max_values_per_aspect ||= Array.new(num_aspects).map {-Float::INFINITY}
+		# Use the super-class to calculate the weighted sum then divide by the
+		# number of values to get the mean.
+		super(ratios, weights) / subQualityValues.length
 	end
 end
 
-# The MWGR is a simple way to weigh the fitness values of multiple sub-objectives into a single
-# fitness value.
-module MeanWeigthedGlobalRatios
+# A Comparator ranks a set of candidates based on their sub-qualities.
+# This default comparator just uses the quality value to sort the candidates.
+class Objective::Comparator
+	attr_accessor :objective
+
+	def quality_values_of_candidates candidates
+		candidates.map {|c| [c, objective.quality_of(c)]}
+	end
+
+	# Return an array with the candidates ranked from worst to best.
+	# Candidates that cannot be distinghuished from each other are randomly ranked.
+	def rank_candidates candidates, weights
+		qvs_with_candidates = quality_values_of_candidates candidates
+
+		qvs_with_candidates.sort_by {|p| p.last.value}.map {|p| p.first}
+	end
+end
+
+# Class for representing multi-objective _sub_qualitites_ and their summary
+# _value_. A quality has a version number which was the version of
+# the objective when this quality was calculated. When a quality value
+# is compared to another quality value they are first updated so that
+# they reflect the quality of the candidate for the current version of
+# the objective.
+class QualityValue
+	include Comparable
+
+	attr_reader :value, :sub_qualities, :objective, :version, :candidate
+
+	def initialize(qv, subQvs, candidate, objective)
+		@value, @sub_qualities, @objective = qv, subQvs, objective
+		@candidate = candidate
+		@version = objective.current_version
+	end
+
+	def <=>(other)
+		# This ensures they are ranked according to latest version of objective.
+		ranked = objective.rank_candidates [self.candidate, other.candidate]
+		if ranked.last == self.candidate
+			return -1
+		else
+			return 1
+		end
+	end
 end
 
 # Short hand for when the objective function is given as a block that should be minimized.
@@ -331,14 +420,4 @@ class ObjectiveMaximizeBlock < Objective
 	end
 end
 
-end
-
-# We add strangely named accessor methods so we can attach the quality values to objects.
-# We use strange names to minimize risk of method name conflicts.
-class Object
-	attr_accessor :_quality_value_without_check, :_objective, :_objective_version
-	def _quality_value
-		@_objective.ensure_updated_quality_value(self) if defined?(@_objective) && @_objective
-		@_quality_value_without_check ||= nil # To avoid warning if unset
-	end
 end
