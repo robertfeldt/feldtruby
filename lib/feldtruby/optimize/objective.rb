@@ -136,14 +136,10 @@ class Objective
 		sub_qualitites
 	end
 
-	def default_weights
-		@default_weights ||= ([1.0] * num_goals)
-	end
-
 	# Return a quality value for a given candidate and weights for the whole 
 	# objective for a given candidate. Updates the best candidate if this
 	# is the best seen so far.
-	def quality_of(candidate, weights = self.default_weights)
+	def quality_of(candidate, weights = self.weights)
 
 		q = quality_if_up_to_date?(candidate)
 		return q if q
@@ -160,7 +156,7 @@ class Objective
 
 	# Rank candidates from best to worst. Updates the quality value of each
 	# candidate.
-	def rank_candidates(candidates, weights = self.default_weights)
+	def rank_candidates(candidates, weights = self.weights)
 
 		# Map each candidate to its sub-qualities without updating the globals.
 		# We will update once for the whole set below.
@@ -261,7 +257,7 @@ class Objective
 	# was the best quality value seen for the goal with given _index_.
 	def reset_quality_scale(candidate, index, typeOfReset)
 
-		is_min = is_min_goal_method?(index)
+		is_min = is_min_goal?(index)
 
 		if (typeOfReset == :min && is_min) || (typeOfReset == :max && !is_min)
 
@@ -355,7 +351,8 @@ class Objective::MeanWeigthedGlobalRatioMapper < Objective::WeightedSumQualityMa
 end
 
 # A Comparator ranks a set of candidates based on their sub-qualities.
-# This default comparator just uses the quality value to sort the candidates.
+# This default comparator just uses the quality value to sort the candidates, with
+# lower values indicating a better quality.
 class Objective::Comparator
 	attr_accessor :objective
 
@@ -363,7 +360,7 @@ class Objective::Comparator
 		candidates.map {|c| [c, objective.quality_of(c)]}
 	end
 
-	# Return an array with the candidates ranked from worst to best.
+	# Return an array with the candidates ranked from best to worst.
 	# Candidates that cannot be distinghuished from each other are randomly ranked.
 	def rank_candidates candidates, weights
 		qvs_with_candidates = quality_values_of_candidates candidates
@@ -393,10 +390,14 @@ class QualityValue
 		# This ensures they are ranked according to latest version of objective.
 		ranked = objective.rank_candidates [self.candidate, other.candidate]
 		if ranked.last == self.candidate
-			return -1
-		else
 			return 1
+		else
+			return -1
 		end
+	end
+
+	def to_s
+		"Quality(#{value}, SubQs = #{sub_qualities.inspect}, ver. #{version})"
 	end
 end
 
