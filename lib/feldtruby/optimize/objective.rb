@@ -67,6 +67,9 @@ class Objective
 
 		setup_logger_and_distribute_to_instance_variables()
 
+		# An array to keep the best object per goal.
+		@best_objects = Array.new
+
 	end
 
 	# Return the number of goals of this objective.
@@ -86,12 +89,12 @@ class Objective
 
 	# Return true iff the method with the given name is a goal method.
 	def is_goal_method?(methodNameAsSymbolOrString)
-		(methodNameAsSymbolOrString.to_s =~ /^goal_(min|max)_([\w_]+)$/) != nil
+		(methodNameAsSymbolOrString.to_s =~ /^(goal|objective)_(min|max)_([\w_]+)$/) != nil
 	end
 
 	# Return true iff the method with the given name is a goal method.
 	def is_min_goal_method?(methodNameAsSymbolOrString)
-		(methodNameAsSymbolOrString.to_s =~ /^goal_min_([\w_]+)$/) != nil
+		(methodNameAsSymbolOrString.to_s =~ /^(goal|objective)_min_([\w_]+)$/) != nil
 	end
 
 	# The candidate objects can be mapped to another object before we call the goal
@@ -244,11 +247,12 @@ class Objective
 
 			reset_quality_scale candidate, index, :min
 
-		elsif qValue > max
+		end
+		if qValue > max
 
 			@global_max_values_per_aspect[index] = qValue
 
-			reset_quality_scale candidate, index, :min
+			reset_quality_scale candidate, index, :max
 
 		end
 	end
