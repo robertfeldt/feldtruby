@@ -180,6 +180,16 @@ class Objective
 
 	end
 
+	# Return true iff candidate1 is better than candidate2. Will update their
+	# quality values if they are out of date.
+	def is_better_than?(candidate1, candidate2)
+		quality_of(candidate1) < quality_of(candidate2)
+	end
+
+	def note_end_of_optimization(optimizer)
+		nil
+	end
+
 	attr_reader :best_candidate
 
 	private
@@ -298,15 +308,21 @@ class Objective
 	end
 end
 
-# A QualityMapper maps a vector of quality values (for each individual goal of
+# A QualityMapper maps a vector of sub-quality values (for each individual goal of
 # an objective) into a single number on which the candidates can be compared.
 class Objective::QualityMapper
-	attr_accessor :objective
+	attr_reader :objective
+
+	def objective=(objective)
+		# Calculate the signs to be used in inverting the max methods later.
+		@signs = objective.goal_methods.map {|gm| objective.is_min_goal_method?(gm) ? 1 : -1}
+		@objective = objective
+	end
 
 	# Map an array of _sub_qualities_ to a single number given an array of weights.
 	# This default class just sums the quality values regardless of the weights.
 	def map_from_sub_qualities subQualityValues, weights
-		subQualityValues.sum
+		subQualityValues.weighted_sum(@signs)
 	end
 end
 
@@ -316,18 +332,24 @@ class Objective::WeightedSumQualityMapper < Objective::QualityMapper
 	def map_from_sub_qualities subQualityValues, weights
 		sum = 0.0
 		subQualityValues.each_with_index do |qv, i|
-			sum += (qv * weights[i])
+			sum += (qv * weights[i] * @signs[i])
 		end
 		sum
 	end
 end
 
-# A MeanWeigthedGlobalRatioMapper implements Bentley's MWGR multi-objective
+# A SumOfWeightedGlobalRatios implements Bentley's SWGR multi-objective
 # fitness mapping scheme as described in the paper:
-#  Bentley ....
-# It is a weighted mean of the ratios the scales of each goal.
-class Objective::MeanWeigthedGlobalRatioMapper < Objective::WeightedSumQualityMapper
+#  P. J. Bentley and J. P. Wakefield, "Finding Acceptable Solutions in the 
+#  Pareto-Optimal Range using Multiobjective Genetic Algorithms", 1997
+#  http://eprints.hud.ac.uk/4052/1/PB_%26_JPW_1997_Finding_Acceptable_Solutions.htm
+# It is a weighted sum of the ratios to the best so far for each goal.
+# One of its benefits is that one need not sort individuals in relation to
+# their peers; the aggregate fitness value is fully determined by the individual
+# and the global min and max values for each objective.
+class Objective::SumOfWeigthedGlobalRatiosMapper < Objective::WeightedSumQualityMapper
 	def ratio(index, value, min, max)
+		return 0.0 if value == nil
 		if objective.is_min_aspect?(index)
 			numerator = max - value
 		else
@@ -344,9 +366,14 @@ class Objective::MeanWeigthedGlobalRatioMapper < Objective::WeightedSumQualityMa
 			ratio i, v, goal_mins[i], goal_maxs[i]
 		end
 
-		# Use the super-class to calculate the weighted sum then divide by the
-		# number of values to get the mean.
-		super(ratios, weights) / subQualityValues.length
+		# We cannot reuse the superclass in calculating the weighted sum since
+		# we have already taken the signs into account in the ratio method.
+		sum = 0.0
+		ratios.each_with_index do |r, i|
+			sum += (qv * weights[i])
+		end
+
+		sum / weights.sum.to_f
 	end
 end
 
@@ -356,16 +383,10 @@ end
 class Objective::Comparator
 	attr_accessor :objective
 
-	def quality_values_of_candidates candidates
-		candidates.map {|c| [c, objective.quality_of(c)]}
-	end
-
 	# Return an array with the candidates ranked from best to worst.
 	# Candidates that cannot be distinghuished from each other are randomly ranked.
 	def rank_candidates candidates, weights
-		qvs_with_candidates = quality_values_of_candidates candidates
-
-		qvs_with_candidates.sort_by {|p| p.last.value}.map {|p| p.first}
+		candidates.sort_by {|c| objective.quality_of(c, weights).value}
 	end
 end
 
@@ -397,7 +418,8 @@ class QualityValue
 	end
 
 	def to_s
-		"Quality(#{value}, SubQs = #{sub_qualities.inspect}, ver. #{version})"
+		subqs = sub_qualities.map {|f| f.to_significant_digits(4)}
+		"%.3g (SubQs = #{subqs.inspect}, ver. #{version})" % value
 	end
 end
 

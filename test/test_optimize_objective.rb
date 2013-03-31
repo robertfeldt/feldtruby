@@ -257,6 +257,15 @@ describe "the objective itself and its updates" do
 		qvnew.wont_equal qv
 	end
 
+  it "can compare two candidates directly" do
+    @o.is_better_than?([1], [2]).must_equal true
+    @o.is_better_than?([3], [2]).must_equal false
+
+    # If they have the same quality value the result can be arbitrary
+    # but in the current implementation it is not:
+    @o.is_better_than?([3, 1], [2, 2]).must_equal true
+  end
+
 	describe "version numbers" do
 		it "has version number 0 when no evaluation has taken place" do
 			@o.current_version.must_equal 0
@@ -315,6 +324,18 @@ describe "two sub-objectives, one min and one max" do
   end
 end
 
+describe "calculating quality when there is one max goal" do
+  before do
+    @o = OneMinOneMaxObjective1.new
+  end
+
+  it "inverts the max value so that it grows downwards" do
+    i1 = [1,2,3]
+    q1 = @o.quality_of(i1)
+    q1.value.must_equal( ((2-1) + (3-2)) + (-1)*(1+2+3) )
+  end
+end
+
 describe "calculating quality with weights" do
   before do
     @o = OneMinOneMaxObjective1.new
@@ -325,7 +346,7 @@ describe "calculating quality with weights" do
     i1 = [1,2,3]
     @o.weights = {:objective_min_distance_between => 2, :objective_max_sum => 3}
     q1 = @o.quality_of(i1)
-    q1.value.must_equal( 2*((2-1) + (3-2)) + 3*(1+2+3) )
+    q1.value.must_equal( 2*((2-1) + (3-2)) + (-3)*(1+2+3) )
     q1.sub_qualities.must_equal [2.0, 6.0]
     q1.candidate.must_equal i1
     q1.objective.must_equal @o
@@ -333,7 +354,7 @@ describe "calculating quality with weights" do
 
     @o.weights = {:objective_min_distance_between => 5, :objective_max_sum => 30}
     q2 = @o.quality_of(i1)
-    q2.value.must_equal( 5*((2-1) + (3-2)) + 30*(1+2+3) )
+    q2.value.must_equal( 5*((2-1) + (3-2)) + (-30)*(1+2+3) )
     q2.sub_qualities.must_equal [2.0, 6.0]
   end
 end

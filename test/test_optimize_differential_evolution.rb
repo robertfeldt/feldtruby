@@ -1,5 +1,6 @@
 require 'feldtruby/optimize/differential_evolution'
 require 'feldtruby/array/basic_stats'
+include FeldtRuby::Optimize
 
 class MinimizeRMS < FeldtRuby::Optimize::Objective
 	def objective_min_rms(candidate)
@@ -13,9 +14,8 @@ class MinimizeRMSAndSum < MinimizeRMS
 	end
 end
 
-class TestDifferentialEvolution < MiniTest::Unit::TestCase
-	include FeldtRuby::Optimize
-	def setup
+describe "DifferentialEvolution" do
+	before do
 		@s2 = SearchSpace.new_symmetric(2, 1)
 		@s4 = SearchSpace.new_symmetric(4, 1)
 
@@ -26,17 +26,17 @@ class TestDifferentialEvolution < MiniTest::Unit::TestCase
 		@de2 = DEOptimizer.new(@o2, @s4, {:verbose => false, :maxNumSteps => 1234})
 	end
 
-	def test_de_for_small_vector_with_rms
+	it "works for rms of small vector" do
 		@de1.optimize()
 		# Very unlikely we get a number over 0.30 (2 elements) after 1000 steps...
-		assert @de1.best.sum <= 0.40
-		assert_equal 1000, @de1.num_optimization_steps
+		@de1.best.sum.must_be :<=, 0.30
+		@de1.num_optimization_steps.must_equal 1000
 	end
 
-	def test_de_for_small_vector_with_rms_and_sum_for_more_steps
+	it "works for rms and sum of small vector and with more steps" do
 		@de2.optimize()
 		# Very unlikely we get a number over 0.40 (4 elements)...
-		assert @de2.best.sum <= 0.40
-		assert_equal 1234, @de2.num_optimization_steps
+		@de2.best.sum.must_be :<=, 0.40
+		@de2.num_optimization_steps.must_equal 1234
 	end
 end

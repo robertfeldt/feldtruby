@@ -72,23 +72,15 @@ class Optimize::Optimizer
 	end
 
 	def log_end_of_optimization
-		best_msg = info_about_candidate(self.best, self.best_quality_value, 
-			self.best_sub_quality_values, "best")
-		log("End of optimization" + "Optimizer: #{self.class}\n" +
-			best_msg + "\n" +
-			"Time used = #{Time.human_readable_timestr(logger.elapsed_time)}, " + 
-			"Steps performed = #{@num_optimization_steps}, " + 
-			"#{Time.human_readable_timestr(time_per_step, true)}/step")
+		log("End of optimization\n" + "Optimizer: #{self.class}\n" +
+			"#{@best}, Quality = #{@objective.quality_of(@best)}\n" +
+			"  Time used = #{Time.human_readable_timestr(logger.elapsed_time)}, " + 
+				"Steps performed = #{@num_optimization_steps}, " + 
+				"#{Time.human_readable_timestr(time_per_step, true)}/step")
 	end
 
 	def time_per_step
 		logger.elapsed_time / logger.current_value(:NumOptimizationSteps)
-	end
-
-
-	def info_about_candidate(candidate, qualityValue, subQualityValues, nameString = "new")
-		info_str = nameString ? "#{nameString} = #{candidate.inspect}\n  " : "  "
-		info_str + candidate._quality_value.inspect
 	end
 
 	# Run one optimization step. Default is to do nothing, i.e. this is just a superclass,
@@ -96,30 +88,18 @@ class Optimize::Optimizer
 	def optimization_step()
 	end
 
-	# Rank all candidates, then update the best one if a new best found.
+	# Update the best if a new best was found.
 	def update_best(candidates)
-		if @best
-			ranked = objective.rank_candidates(candidates + [@best])
-		else
-			ranked = objective.rank_candidates(candidates)
-		end
-		new_best, new_quality_value, new_sub_qvalues = ranked.first
-		# Since some objectives are not deterministic the best
-		if new_best != @best
-			if @best
-				old_best, new_qv_old_best, sub_qv_old_best = ranked.select {|a| a.first == @best}.first
-			end
+		best_new, rest = objective.rank_candidates(candidates)
+		if @best.nil? || @objective.is_better_than?(best_new, @best)
+			qb = @best.nil? ? nil : @objective.quality_of(@best)
 			log "New best candidate found", :new_best, {
-				:new_best => new_best,
-				:new_quality_value => new_quality_value, 
-				:new_sub_qvalues => new_sub_qvalues,
+				:new_best => best_new,
+				:new_quality_value => @objective.quality_of(best_new), 
 				:old_best => @best,
-				:old_quality_value => new_qv_old_best,
-				:old_sub_qvalues => sub_qv_old_best			
+				:old_quality_value => qb
 			}
-			@best = new_best
-			@best_quality_value = new_quality_value
-			@best_sub_quality_values = new_sub_qvalues
+			@best = best_new
 			true
 		else
 			false
