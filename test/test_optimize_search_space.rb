@@ -104,6 +104,14 @@ describe "LatinHypercubeSampler" do
 	end
 end
 
+describe "SearchSpace.new_from_min_max_per_variable" do
+	it "can generate a valid search space from min max per variable" do
+		ss = FeldtRuby::Optimize::SearchSpace.new_from_min_max_per_variable([[0, 6], [-3, 2]])
+		ss.min_values.must_equal [0, -3]
+		ss.max_values.must_equal [6, 2]
+	end
+end
+
 class TestSearchSpace < MiniTest::Unit::TestCase
 	def setup
 		@s1 = FeldtRuby::Optimize::SearchSpace.new([-5], [5])	

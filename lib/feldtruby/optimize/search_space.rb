@@ -57,6 +57,16 @@ class SearchSpace
 		self.new(min_values, max_values)
 	end
 
+	def self.new_from_min_max_per_variable(minMaxPairs)
+		min_values = []
+		max_values = []
+		minMaxPairs.each do |min, max|
+			min_values << min
+			max_values << max
+		end
+		self.new(min_values, max_values)
+	end
+
 	def num_variables
 		@min_values.length
 	end
