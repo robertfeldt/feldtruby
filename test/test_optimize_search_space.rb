@@ -106,9 +106,16 @@ end
 
 describe "SearchSpace.new_from_min_max_per_variable" do
 	it "can generate a valid search space from min max per variable" do
-		ss = FeldtRuby::Optimize::SearchSpace.new_from_min_max_per_variable([[0, 6], [-3, 2]])
-		ss.min_values.must_equal [0, -3]
-		ss.max_values.must_equal [6, 2]
+		ss = FeldtRuby::Optimize::SearchSpace.new_from_min_max_per_variable([[0, 6], [-3, 2], [17, 100]])
+		ss.num_variables.must_equal 3
+		ss.min_values.must_equal [0, -3, 17]
+		ss.max_values.must_equal [6, 2, 100]
+	end
+
+	it "raises an exception if there are no min max pairs in the supplied array" do
+		proc {
+			FeldtRuby::Optimize::SearchSpace.new_from_min_max_per_variable([])
+			}.must_raise(RuntimeError)
 	end
 end
 
