@@ -1,5 +1,5 @@
 $: << "lib"
-$: << "../lib"
+$: << "../../lib"
 require 'feldtruby/optimize/differential_evolution'
 
 # Compare different samplers and their effect on the quality of evolved 
@@ -10,8 +10,8 @@ $NumSteps = (ARGV[0] && ARGV[0] =~ /^\d+/) ? ARGV[0].to_i : 10_000
 NumSteps1 = [1_000, 5_000, 10_000, 25_000]
 NumSteps2 = [5_000, 10_000, 25_000, 50_000]
 
-#NumSteps = NumSteps1
-NumSteps = NumSteps2
+NumSteps = NumSteps1
+#NumSteps = NumSteps2
 
 SamplerRadiuses1 = [
   ["PopulationSampler", 15],
@@ -27,10 +27,10 @@ SamplerRadiuses2 = (4..30).map do |radius|
   ["RadiusLimitedPopulationSampler", radius]
 end + [["PopulationSampler", 15]]
 
-#SamplerRadiuses = SamplerRadiuses1
-SamplerRadiuses = SamplerRadiuses2
+SamplerRadiuses = SamplerRadiuses1
+#SamplerRadiuses = SamplerRadiuses2
 
-NumRepetitionsPerSampler = 100
+NumRepetitionsPerSampler = 50
 
 # This is Lévi function number 13 as stated on the page:
 #  http://en.wikipedia.org/wiki/Test_functions_for_optimization
@@ -174,26 +174,41 @@ class MinSchwefel2_21 < MinFunctionOfDimension
   end
 end
 
+# This is the OmniTest bi-criteria test function as described in the paper:
+#  Shir et al, "Enhancing Decision Space Diversity in Evolutionary Multiobjective Algorithms", 2009.
+class MinOmniTest < MinFunctionOfDimension
+  def objective_min_sin(x)
+    x.map {|xi| Math.sin(Math::PI * xi)}.sum
+  end
+  def objective_min_cos(x)
+    x.map {|xi| Math.cos(Math::PI * xi)}.sum
+  end
+end
 
 Problems1 = [
-  ["MinLeviFunctionNum13", 2, 10],
-  ["MinBealeFunction", 2, 4.5],
-  ["MinEasomFunction", 2, 100]
+  ["MinLeviFunctionNum13", ([[-10, 10]] * 2)],
+  ["MinBealeFunction", ([[-4.5, 4.5]] * 2)],
+  ["MinEasomFunction", ([[-100, 100]] * 2)]
 ]
 
 Problems2 = [
-  ["MinEggHolderFunction", 2, 512]
+  ["MinEggHolderFunction", ([[-512, 512]] * 2)]
+]
+
+Problems3 = [
+  ["MinOmniTest", ([[0, 6]] * 5)]
 ]
 
 #Problems = Problems1
 #Problems = Problems2
-Problems = Problems1 + Problems2
+#Problems = Problems1 + Problems2
+Problems = Problems3
 
 include FeldtRuby::Optimize
 
-def best_individual(samplerClass, radius, objectiveKlass, numVars, dist, numSteps)
+def best_individual(samplerClass, radius, objectiveKlass, minMaxSpec, numSteps)
 
-  ss = SearchSpace.new_symmetric(numVars, dist)
+  ss = SearchSpace.new_from_min_max_per_variable(minMaxSpec)
 
   objective = objectiveKlass.new
 
@@ -203,17 +218,24 @@ def best_individual(samplerClass, radius, objectiveKlass, numVars, dist, numStep
     :samplerClass => samplerClass,
     :samplerRadius => radius})
 
+  start = Time.now
   best = de.optimize()
+  elapsed_time = Time.now - start
 
-  return best, objective.quality_of(best)
+  return best, objective.quality_of(best), elapsed_time
 
 end
 
 fh = File.open("results_comparing_samplers.csv", "w")
 
-fh.puts "Problem,Sampler,Radius,Time,NumSteps,Q,X,Y"
+# Find the max number of vars for one of the problems
+MaxNumVars = Problems.map {|p| p[1].length}.max
 
-Problems.each do |problem, numVars, dist|
+ColNamesForVariables = (0...MaxNumVars).map {|i| "X#{i}"}.join(",")
+
+fh.puts "Problem,Sampler,Radius,Time,NumSteps,Q,#{ColNamesForVariables}"
+
+Problems.each do |problem, minMaxSpec|
   
   objectiveKlass = eval problem
   
@@ -223,11 +245,11 @@ Problems.each do |problem, numVars, dist|
       sampler_klass = eval "FeldtRuby::Optimize::#{sampler}"
   
       NumRepetitionsPerSampler.times do
-        start = Time.now
-        best, qv = best_individual sampler_klass, radius, objectiveKlass, numVars, dist, num_steps
-        elapsed_time = Time.now - start
+        best, qv, elapsed_time = best_individual sampler_klass, radius, objectiveKlass, minMaxSpec, num_steps
   
-        s = "#{problem},#{sampler},#{radius},#{elapsed_time},#{num_steps},#{qv.value},#{best[0]},#{best[1]}"
+        best_str = best.to_a.map {|xi| xi.to_s}.join(",")
+
+        s = "#{problem},#{sampler},#{radius},#{elapsed_time},#{num_steps},#{qv.value},#{best_str}"
         fh.puts s
       end
   

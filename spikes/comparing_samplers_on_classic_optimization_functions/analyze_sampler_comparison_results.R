@@ -2,7 +2,8 @@
 
 source("/Users/feldt/feldt/general/web/advice/statistics/nonparametric_effect_sizes.r")
 
-data <- read.csv("/Users/feldt/dev/feldtruby/spikes/comparing_samplers_on_classic_optimization_functions/results_comparing_samplers_levi13_beale_easom_eggholder_all_radii_4_to_30.csv")
+#data <- read.csv("/Users/feldt/dev/feldtruby/spikes/comparing_samplers_on_classic_optimization_functions/results_comparing_samplers_levi13_beale_easom_eggholder_all_radii_4_to_30.csv")
+data <- read.csv("/Users/feldt/dev/feldtruby/spikes/comparing_samplers_on_classic_optimization_functions/results_comparing_samplers_omnitest.csv")
 
 # Combine Sampler and Radius into one column and use shorter name for Sampler.
 data$SamplerRadius <- sapply(data, function(x) paste(ifelse(data$Sampler=="PopulationSampler", "PS", "RL"), data$Radius, sep=""))[,1] 
@@ -68,3 +69,6 @@ boxplot_numsteps_problem(d, "MinEggHolderFunction", 5000)
 boxplot_numsteps_problem(d, "MinEggHolderFunction", 10000)
 boxplot_numsteps_problem(d, "MinEggHolderFunction", 25000)
 boxplot_numsteps_problem(d, "MinEggHolderFunction", 50000)
+
+boxplot_numsteps_problem(d, "MinOmniTest", 25000)
+effect.size(d, "MinOmniTest", 50000, "RL5", "PS15")
