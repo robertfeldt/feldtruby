@@ -1,7 +1,8 @@
 require 'feldtruby/version'
 require 'feldtruby/logger'
-require 'mongo'
-require 'bson'
+require 'feldtruby/mongodb'
+
+if FeldtRuby.is_mongo_running?
 
 module FeldtRuby
 
@@ -63,11 +64,10 @@ end
 
 # This is an EventLogger that logs to a MongoDB database. It caches
 # the last two events per event type for quicker access to them.
-class MongoDBLogger < EventLogger
+class MongoDBLogger < Logger
   OurParams = {
     :host => "localhost",
     :port => 27017,
-    :print_frequency => 1.0  # Minimum seconds between consecutive messages printed for the same event type
   }
 
   DefaultParams = FeldtRuby::Logger::DefaultParams.clone.update(OurParams)
@@ -76,7 +76,6 @@ class MongoDBLogger < EventLogger
   # investigate...
   def initialize(io = STDOUT, params = DefaultParams)
     super
-    print_frequency = @params[:print_frequency]
   end
 
   def unique_mongodb_name
@@ -88,6 +87,8 @@ class MongoDBLogger < EventLogger
 
   # Set up the internal data store.
   def setup_data_store
+
+    super
 
     # To handle the main "directory" of logger dbs in the mongodb.
     @all_dbs = FeldtRuby::AllMongoDBLoggers.new @params[:host], @params[:port]
@@ -106,12 +107,10 @@ class MongoDBLogger < EventLogger
     # events for that type.
     @collections = Hash.new
 
-    # Caches for the last and second_last events per type.
+    # Caches for the last and second_last events per type so we need
+    # not lookup in db for most common requests.
     @cache_last = Hash.new
     @cache_2ndlast = Hash.new
-
-    # We count the number of events of each type.
-    @counts = Hash.new(0)
 
   end
 
@@ -122,28 +121,15 @@ class MongoDBLogger < EventLogger
   # Events are saved in the mongodb db, using one collection per event type.
   # The type itself is not saved in the event since it is implicit in the
   # collection in which the event is saved.
-  #
-  # The default event collection is called "___default___" and this is where
-  # events are logged that have no explicit type specified.
-  #
-  # An event is a hash with the keys:
-  #  "t" => time of event in UTC
-  #  "v" => optional value of the event, this is singled out for perf reasons, 
-  #           it could also be saved in the data ("d")
-  #  "d" => optional hash with additional data for the event
-  #
-  # An event which has a value but no data is called a value event.
-  # A value event where the value is a number is called a number event.
-  # An event with data is called a data event.
-  # An event with only a message is called a message event. This is saved
-  #   as a data event of type "___default___", with the message in e["d"]["m"].
-  # An event can also be a counter event. Counter events are not logged, we just
-  #   count how many they are.
   def save_event event, type
 
-    type ||= "___default___"
-
     collection_for_type(type).insert event
+
+    update_cache event, type
+
+  end
+
+  def update_cache event, type
 
     @cache_2ndlast[type] = @cache_last[type]
 
@@ -156,55 +142,25 @@ class MongoDBLogger < EventLogger
     @counts[eventType]
   end
 
-  # Log a counter event, i.e. update the (local) count of how many times
-  # this event has happened.
-  def log_counter eventType, message = nil
-    log_event eventType, nil, message
-  end
-
-  # Log a value event.
-  def log_value eventType, value, message = nil
-    log_event eventType, {"t" => Time.now.utc, "v" => value}, message
-  end
-
-  # Log a data event.
-  def log_data eventType, data, message = nil
-    log_event eventType, {"t" => Time.now.utc, "d" => value}, message
-  end
-
-  # Log a message event.
-  def log message
-    log_event "___default___", {"t" => Time.now.utc, "d" => {"m" => message}}, message
-  end
-
   # Log the event and print the message, if any.
   def log_event eventType, event, message = nil
 
     @counts[eventType] += 1
 
-    save_event(event, eventType) if event
+    if event
 
-    print_message(message, eventType, event["t"]) if message
+      event["t"] = Time.now.utc
+
+      save_event(event, eventType)
+
+      if message
+        print_message_if_needed message, eventType, (eventType == "___default___")
+      end
+
+    end
 
     event
 
-  end
-
-  # Set the minimum time between printing successive messages of the same type.
-  def print_frequency=(seconds = 1.0)
-    @print_frequency = seconds
-  end
-
-  def print_message message, eventType, time
-    # We only print if enough time since last time we printed. This way
-    # we avoid "flooding" the user with log messages of the same type.
-    if (time - @last_time_printed_for_event_type[eventType]) >= printFrequency
-
-      io_puts message, time
-
-      @last_time_printed_for_event_type[eventType] = time
-
-    end
   end
 
   def collection_for_type(t)
@@ -212,14 +168,28 @@ class MongoDBLogger < EventLogger
     @collections[ts] ||= @db[ts.to_s]
   end
 
-  def current_value eventType
-    @cache_last[eventType]["v"]
+  def last_event eventType
+    @cache_last[eventType]
+  end
+
+  def prev_event eventType
+    @cache_2ndlast[eventType]
+  end
+
+  def last_value eventType
+    current_value eventType
   end
 
   # Return the current (latest) value for a given eventType and metric. 
   # Return nil if no value has been set.
-  def previous_value eventType
-    @cache_2ndlast[eventType]["v"]
+  def previous_value eventType, metric = "v"
+    @cache_2ndlast[eventType][metric]
+  end
+
+  # Return the current (latest) value for a given eventType and metric. 
+  # Return nil if no value has been set.
+  def current_value eventType, metric = "v"
+    @cache_last[eventType][metric]
   end
 
   # Return all the events for a given _eventType_.
@@ -260,7 +230,7 @@ class MongoDBLogger < EventLogger
 
   # Get an array of values for the metric named _metric_ in events
   # of type _eventType_.
-  def values_for_event_and_metric eventType, metric = :_v
+  def values_for_event_and_metric eventType, metric = "v"
     events(eventType).map {|e| e.data[metric]}
   end
 
@@ -268,6 +238,8 @@ class MongoDBLogger < EventLogger
   def values_for eventType
     values_for_event_and_metric eventType
   end
+end
+
 end
 
 end
