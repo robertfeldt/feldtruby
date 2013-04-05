@@ -257,7 +257,6 @@ module FeldtRuby::Statistics::Plotting
 
   def filled_contour(csvFilePath, xlabel, ylabel, title = "filled.contour")
     include_library "MASS"
-    #include_library "ggplot2"
 
     script = <<-EOS
       data <- read.csv(#{csvFilePath.inspect})
@@ -285,6 +284,10 @@ module FeldtRuby::Statistics::Plotting
   end
 
   def hexbin_heatmap(csvFilePath, xlabel, ylabel, title = "heatmap", bins = 50)
+    include_library "grid"
+    include_library "lattice"
+    include_library "hexbin"
+
     plot_2dims(csvFilePath,
       "f <- ggplot(data, aes(#{xlabel}, #{ylabel})) + geom_hex( bins = #{bins} )",
       xlabel, ylabel, title)
@@ -424,19 +427,10 @@ module FeldtRuby::Statistics::Plotting
   # in the csv files in _csvFiles_.
   def overlaid_densities_from_csv_files(columnName, csvFiles, title = "Densities of distributions", datasetsName = "distribution", xlabel = "values", ylabel = "density")
 
-    read_csvs = ""
-    data_frame = "data.frame(1:length(data0)"
-
-    csvFiles.each_with_index do |csvfile, i|
-      set_name = "data#{i}"
-      read_csvs += "#{set_name} <- read.csv(#{csvfile.inspect}); "
-      data_frame += ", d#{i} = #{set_name}$#{columnName}"
-    end
-    data_frame += ");"
+    load_csvs = load_csv_files_as_data csvFiles
 
     script = <<-EOS
-      #{read_csvs}
-      df <- #{data_frame}
+      #{load_csvs}
       #df <- data.frame(index = (1:#{cardinalities.first}), #{hash_to_R_params(dataMap)})
       df.m <- melt(df, id = "index")
       names(df.m)[2] <- _datasetsName_
