@@ -26,6 +26,16 @@ describe 'Logger' do
 
   end
 
+  it 'logs value events' do
+    @l.log_value :v, 1, "a = 1"
+    @l.num_events(:v).must_equal 1
+    @sio.string.split("\n").last[-5..-1].must_equal "a = 1"
+
+    @l.log_value :v, 2, "a"
+    @l.num_events(:v).must_equal 2
+    @sio.string.split("\n").last[-1..-1].must_equal "a"
+  end
+
   it 'can log default events (described in strings)' do
 
     @l.log "event 1"
@@ -51,22 +61,35 @@ describe 'Logger with a non-zero print frequency' do
 
   it 'only logs if log event comes less often than the print frequency' do
 
-    @l.log "event 1"
-    @l.num_events.must_equal 1
+    @l.log_value :v, 1, "a = 1"
+    @l.num_events(:v).must_equal 1
 
     # This event comes right after so is only counted, not printed
-    @l.log "event 2"
-    @l.num_events.must_equal 2
-    @sio.string.split("\n").last[-7..-1].must_equal "event 1"
+    @l.log_value :v, 2, "a = 2"
+    @l.num_events(:v).must_equal 2
+    @sio.string.split("\n").last[-5..-1].must_equal "a = 1"
 
     # Ensure we have waited longer than print frequency
     sleep 0.1
-    @l.log "event 3"
-    @l.num_events.must_equal 3
-    @sio.string.split("\n").last[-7..-1].must_equal "event 3"
+    @l.log_value :v, 3, "a = 3"
+    @l.num_events(:v).must_equal 3
+    @sio.string.split("\n").last[-5..-1].must_equal "a = 3"
 
   end
 
+  it 'always logs the default events' do
+
+    @l.log "1"
+    @sio.string.split("\n").last[-1..-1].must_equal "1"
+
+    @l.log "2"
+    @sio.string.split("\n").last[-1..-1].must_equal "2"
+
+    sleep 0.1
+    @l.log "3"
+    @sio.string.split("\n").last[-1..-1].must_equal "3"
+
+  end
 end
 
 describe 'Logger with two IO output streams' do

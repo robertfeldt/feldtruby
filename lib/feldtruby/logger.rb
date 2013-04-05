@@ -8,8 +8,8 @@ module FeldtRuby
 # Simplest possible logger only prints to STDOUT.
 class Logger
   DefaultParams = {
-    :verbose => false,
-    :print_frequency => 1.0  # Minimum seconds between consecutive messages printed for the same event type
+    :verbose => true,
+    :print_frequency => 0.3  # Minimum seconds between consecutive messages printed for the same event type
   }
 
   UnixEpoch = Time.at(0)
@@ -99,7 +99,12 @@ class Logger
   # Log a counter event, i.e. update the (local) count of how many times
   # this event has happened.
   def log_counter eventType, message = nil
-    log_event eventType, nil, message
+    if message
+      log_event eventType, nil, message
+    else
+      # We count it even if should not log it
+      @counts[eventType] += 1
+    end
   end
 
   # Log a value event.
@@ -123,18 +128,20 @@ class Logger
 
     @counts[eventType] += 1
 
-    print_message_if_needed message, eventType if message
+    if message
+      print_message_if_needed message, eventType, (eventType == "___default___")
+    end
 
     event
 
   end
 
-  def print_message_if_needed message, eventType
+  def print_message_if_needed message, eventType, skipCheck = false
     time = Time.now.utc
 
     # We only print if enough time since last time we printed. This way
     # we avoid "flooding" the user with log messages of the same type.
-    if (time - @last_time_printed_for_event_type[eventType]) >= @print_frequency
+    if skipCheck || (time - @last_time_printed_for_event_type[eventType]) >= @print_frequency
 
       io_puts message, time
 
