@@ -22,4 +22,10 @@ Gem::Specification.new do |gem|
   gem.add_dependency('json')
 
   gem.add_dependency('nokogiri')
+
+  # For mongodb_logger:
+  gem.add_dependency('mongo')
+
+  # bson_ext does not work with macruby but good for MongoDB performance so:
+  gem.add_dependency('bson_ext')
 end
