@@ -9,7 +9,7 @@ module FeldtRuby
 class Logger
   DefaultParams = {
     :verbose => true,
-    :print_frequency => 0.3  # Minimum seconds between consecutive messages printed for the same event type
+    :print_frequency => 0.5  # Minimum seconds between consecutive messages printed for the same event type
   }
 
   UnixEpoch = Time.at(0)
@@ -113,7 +113,11 @@ class Logger
   end
 
   # Log a data event.
-  def log_data eventType, data, message = nil
+  def log_data eventType, data, message = nil, tagWithData = false
+    if tagWithData
+      dstr = data.keys.map {|k| "#{k}: #{data[k]}"}.join("\n  ")
+      message += "\n  #{dstr}"
+    end
     log_event eventType, {"d" => data}, message
   end
 
@@ -157,7 +161,7 @@ class Logger
 
     elapsed_str = Time.human_readable_timestr elapsed_time(time)
 
-    s = time.strftime("\n%H:%M.%S%3N (#{elapsed_str}), ") + message
+    s = time.strftime("\n%H:%M.%S (#{elapsed_str}), ") + message
 
     @ios.each {|io| io.puts s}
 

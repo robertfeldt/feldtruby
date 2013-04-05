@@ -83,11 +83,10 @@ class Optimizer
 		if @best.nil? || @objective.is_better_than?(best_new, @best)
 			qb = @best.nil? ? nil : @objective.quality_of(@best)
 			logger.log_data :new_best, {
-				:new_best => best_new,
-				:new_quality_value => @objective.quality_of(best_new), 
-				:old_best => @best,
-				:old_quality_value => qb
-			}, "New best candidate found"
+				"New best" => best_new,
+				"New quality" => @objective.quality_of(best_new), 
+				"Old best" => @best,
+				"Old quality" => qb}, "New best candidate found", true
 			@best = best_new
 			true
 		else

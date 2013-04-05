@@ -63,8 +63,8 @@ class DEOptimizerBase < EvolutionaryOptimizer
 		# Supplant the target vector with the trial vector if better
 		if best != target
 			logger.log_data :better_candidate_found, {
-				:better => best, 
-				:quality => @objective.quality_of(best)}, "Trial vector was better"
+				"Candidate" => best, 
+				"Quality" => @objective.quality_of(best)}, "Trial vector was better", true
 			trial_better = true
 			update_candidate_in_population(target_index, trial)
 		else
