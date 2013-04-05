@@ -6,28 +6,15 @@ require 'feldtruby/math/rand'
 require 'feldtruby/array'
 require 'feldtruby/logger'
 
-module FeldtRuby
-
-module Optimize 
-	DefaultOptimizationOptions = {
-		:terminationCriterionClass => FeldtRuby::Optimize::MaxStepsTerminationCriterion,
-		:verbose => false,
-		:populationSize => 100,
-	}
-
-	def self.override_default_options_with(options)
-		o = DefaultOptimizationOptions.clone.update(options)
-		o[:terminationCriterion] = o[:terminationCriterionClass].new(o[:maxNumSteps])
-		o
-	end
-end
+module FeldtRuby::Optimize
 
 # Find an vector of float values that optimizes a given
 # objective.
-class Optimize::Optimizer
+class Optimizer
 	include FeldtRuby::Logging
 
-	attr_reader :objective, :search_space, :best, :best_quality_value, :best_sub_quality_values, :num_optimization_steps, :termination_criterion
+	attr_reader :options, :objective, :search_space, :best, :best_quality_value
+	attr_reader :best_sub_quality_values, :num_optimization_steps, :termination_criterion
 
 	def initialize(objective, searchSpace = FeldtRuby::Optimize::DefaultSearchSpace, options = {})
 		@best = nil # To avoid warnings if not set
@@ -107,13 +94,69 @@ class Optimize::Optimizer
 	end
 end
 
-class FeldtRuby::Optimize::PopulationBasedOptimizer < FeldtRuby::Optimize::Optimizer
+# Sample the indices of a population. This default super class just randomly
+# samples without replacement.
+class PopulationSampler
+	def initialize(optimizer, options = FeldtRuby::Optimize::DefaultOptimizationOptions)
+		@optimizer = optimizer
+		@population_size = @optimizer.population_size
+		initialize_all_indices()
+	end
+
+	def initialize_all_indices
+		# We set up an array of the indices to all candidates of the population so we can later sample from it
+		# This should always contain all indices even if they might be out of order. This is because we
+		# only swap! elements in this array, never delete any.
+		@all_indices = (0...@population_size).to_a
+	end
+
+	def sample_population_indices_without_replacement(numSamples)
+		sample_indices_without_replacement numSamples, @all_indices
+	end
+
+	def sample_indices_without_replacement(numSamples, indices)
+		sampled_indices = []
+		size = indices.length
+		numSamples.times do |i|
+			index = i + rand_int(size - i)
+			sampled_index, skip = indices.swap!(i, index)
+			sampled_indices << sampled_index
+		end
+		sampled_indices
+	end
+end
+
+# This implements a "trivial geography" similar to Spector and Kline (2006) 
+# by first sampling an individual randomly and then selecting additional
+# individuals for the same tournament within a certain deme of limited size
+# for the sub-sequent individuals in the population. The version we implement
+# here is from:
+#  I. Harvey, "The Microbial Genetic Algorithm", in Advances in Artificial Life
+#  Darwin Meets von Neumann, Springer, 2011.
+class RadiusLimitedPopulationSampler < PopulationSampler
+	def initialize(optimizer, options = FeldtRuby::Optimize::DefaultOptimizationOptions)
+		super
+		@radius = options[:samplerRadius]
+	end
+
+	def sample_population_indices_without_replacement(numSamples)
+		i = rand(@population_size)
+		indices = (i..(i+@radius)).to_a
+		if (i+@radius) >= @population_size
+			indices.map! {|i| i % @population_size}
+		end
+		sample_indices_without_replacement numSamples, indices
+	end
+end
+
+class PopulationBasedOptimizer < Optimizer
 	attr_reader :population
 
 	def initialize_options(options)
 		super
-		initialize_population(@options[:populationSize])
-		initialize_all_indices()
+		@population_size = @options[:populationSize]
+		initialize_population(@population_size)
+		@sampler = options[:samplerClass].new(self, options)
 	end
 
 	# Create a population of a given size by randomly sampling candidates from the search space.
@@ -121,26 +164,29 @@ class FeldtRuby::Optimize::PopulationBasedOptimizer < FeldtRuby::Optimize::Optim
 		@population = Array.new(sizeOfPopulation).map {search_space.gen_candidate()}
 	end
 
-	def population_size
-		@population.length
+	# Re-initialize parts of the population.
+	def re_initialize_population(percentageOfPopulation = 0.50)
+		if percentageOfPopulation >= 1.00
+			initialize_population(@population_size)
+		else
+			num_to_replace = (percentageOfPopulation * @population_size).to_i
+			# We must use a PopulationSampler here instead of just calling sample_population_indices_without_replacement
+			# since we do not know which sampler is installed.
+			sampler = PopulationSampler.new(self, self.options)
+			indices = sampler.sample_population_indices_without_replacement(num_to_replace)
+			indices.each do |i|
+				@population[i] = search_space.gen_candidate()
+			end
+		end
 	end
 
-	def initialize_all_indices
-		# We set up an array of the indices to all candidates of the population so we can later sample from it
-		# This should always contain all indices even if they might be out of order. This is because we
-		# only swap! elements in this array, never delete any.
-		@all_indices = (0...population_size).to_a
+	def population_size
+		@population_size
 	end
 
 	# Sample indices from the population without replacement.
 	def sample_population_indices_without_replacement(numSamples)
-		sampled_indices = []
-		numSamples.times do |i|
-			index = i + rand_int(population_size - i)
-			sampled_index, skip = @all_indices.swap!(i, index)
-			sampled_indices << sampled_index
-		end
-		sampled_indices
+		@sampler.sample_population_indices_without_replacement(numSamples)
 	end
 
 	# Get candidates from population at given indices.
@@ -157,6 +203,20 @@ class FeldtRuby::Optimize::PopulationBasedOptimizer < FeldtRuby::Optimize::Optim
 	def update_candidate_in_population(index, candidate)
 		@population[index] = candidate
 	end
+end
+
+DefaultOptimizationOptions = {
+	:terminationCriterionClass => FeldtRuby::Optimize::MaxStepsTerminationCriterion,
+	:verbose => false,
+	:populationSize => 200,
+	:samplerClass => FeldtRuby::Optimize::RadiusLimitedPopulationSampler,
+	:samplerRadius => 15 # Max distance between individuals selected in same tournament
+}
+
+def self.override_default_options_with(options)
+	o = DefaultOptimizationOptions.clone.update(options)
+	o[:terminationCriterion] = o[:terminationCriterionClass].new(o[:maxNumSteps])
+	o
 end
 
 end
