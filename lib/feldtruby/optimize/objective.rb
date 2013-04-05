@@ -186,6 +186,14 @@ class Objective
 		quality_of(candidate1) < quality_of(candidate2)
 	end
 
+	# Return true iff candidate1 is better than candidate2 for goal _index_. 
+	# Will update their quality values if they are out of date.
+	def is_better_than_for_goal?(index, candidate1, candidate2)
+		qv1 = quality_of(candidate1)
+		qv2 = quality_of(candidate2)
+		qv1.sub_quality(index, true) <= qv2.sub_quality(index, true)
+	end
+
 	def note_end_of_optimization(optimizer)
 		nil
 	end
@@ -415,6 +423,14 @@ class QualityValue
 		else
 			return -1
 		end
+	end
+
+	# Return the sub quality value with a given index. Can make sure maximization
+	# goals are mapped as minimization goals if ensureMinimization is true.
+	def sub_quality(index, ensureMinimization = false)
+		return @sub_qualities[index] if !ensureMinimization || @objective.is_min_goal?(index)
+		# Now we now this is a max goal that should be returned as a min goal => invert it.
+		-(@sub_qualities[index])
 	end
 
 	def to_s

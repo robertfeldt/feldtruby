@@ -39,19 +39,19 @@ class Optimizer
 		# Set up a random best since other methods require it
 		update_best([search_space.gen_candidate()])
 		begin
-			log "Optimization with optimizer #{self.class.inspect} started"
+			logger.log "Optimization with optimizer #{self.class.inspect} started"
 			while !termination_criterion.terminate?(self)
 				new_candidates = optimization_step()
 				@num_optimization_steps += 1
-				#log_value :NumOptimizationSteps, @num_optimization_steps # This takes a loooong time if using EventLogger. Need to simplify!
 				update_best(new_candidates)
 			end
 		rescue Exception => e
-			log( "!!! - Optimization FAILED with exception: #{e.message} - !!!" + e.backtrace.join("\n"), 
-				:exception, {:exception_class => e.class.inspect, :backtrace => e.backtrace.join("\n")} )
+			logger.log_data :exception, {
+				:exception_class => e.class.inspect, 
+				:backtrace => e.backtrace.join("\n")
+			}, "!!! - Optimization FAILED with exception: #{e.message} - !!!" + e.backtrace.join("\n")
 		ensure
-			log_value :NumOptimizationSteps, @num_optimization_steps,
-				"!!! - Optimization FINISHED after #{@num_optimization_steps} steps - !!!"
+			logger.log "!!! - Optimization FINISHED after #{@num_optimization_steps} steps - !!!"
 		end
 		@objective.note_end_of_optimization(self)
 		log_end_of_optimization
@@ -59,15 +59,17 @@ class Optimizer
 	end
 
 	def log_end_of_optimization
-		log("End of optimization\n" + "Optimizer: #{self.class}\n" +
-			"#{@best}, Quality = #{@objective.quality_of(@best)}\n" +
+		logger.log("End of optimization\n" + 
+			"  Optimizer: #{self.class}\n" +
+			"  Best found: #{@best}\n" +
+			"  Quality of best: #{@objective.quality_of(@best)}\n" +
 			"  Time used = #{Time.human_readable_timestr(logger.elapsed_time)}, " + 
-				"Steps performed = #{@num_optimization_steps}, " + 
-				"#{Time.human_readable_timestr(time_per_step, true)}/step")
+			  "Steps performed = #{@num_optimization_steps}, " + 
+			  "#{Time.human_readable_timestr(time_per_step, true)}/step")
 	end
 
 	def time_per_step
-		logger.elapsed_time / logger.current_value(:NumOptimizationSteps)
+		logger.elapsed_time / @num_optimization_steps
 	end
 
 	# Run one optimization step. Default is to do nothing, i.e. this is just a superclass,
@@ -80,12 +82,12 @@ class Optimizer
 		best_new, rest = objective.rank_candidates(candidates)
 		if @best.nil? || @objective.is_better_than?(best_new, @best)
 			qb = @best.nil? ? nil : @objective.quality_of(@best)
-			log "New best candidate found", :new_best, {
+			logger.log_data :new_best, {
 				:new_best => best_new,
 				:new_quality_value => @objective.quality_of(best_new), 
 				:old_best => @best,
 				:old_quality_value => qb
-			}
+			}, "New best candidate found"
 			@best = best_new
 			true
 		else
@@ -207,10 +209,10 @@ end
 
 DefaultOptimizationOptions = {
 	:terminationCriterionClass => FeldtRuby::Optimize::MaxStepsTerminationCriterion,
-	:verbose => false,
+	:verbose => true,
 	:populationSize => 200,
 	:samplerClass => FeldtRuby::Optimize::RadiusLimitedPopulationSampler,
-	:samplerRadius => 15 # Max distance between individuals selected in same tournament
+	:samplerRadius => 10 # Max distance between individuals selected in same tournament
 }
 
 def self.override_default_options_with(options)

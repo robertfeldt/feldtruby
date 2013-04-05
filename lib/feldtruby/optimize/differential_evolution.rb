@@ -58,12 +58,13 @@ class DEOptimizerBase < EvolutionaryOptimizer
 	def optimization_step()
 		trial, target, target_index = generate_trial_candidate_and_target()
 
-		# We get [candidate, qualityValue, subQualityValues] for each vector
 		best, worst = objective.rank_candidates([target, trial])
 
 		# Supplant the target vector with the trial vector if better
 		if best != target
-			log "Trial vector was better", :better_candidate_found, {:better => best, :quality => @objective.quality_of(best)}
+			logger.log_data :better_candidate_found, {
+				:better => best, 
+				:quality => @objective.quality_of(best)}, "Trial vector was better"
 			trial_better = true
 			update_candidate_in_population(target_index, trial)
 		else
