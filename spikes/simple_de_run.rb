@@ -2,7 +2,7 @@ $: << "lib"
 $: << "../lib"
 require 'feldtruby/optimize/differential_evolution'
 
-$NumSteps = (ARGV[0] && ARGV[0] =~ /^\d+/) ? ARGV[0].to_i : 5_000
+$NumSteps = (ARGV[0] && ARGV[0] =~ /^\d+/) ? ARGV[0].to_i : 10_000
 $LC = ((ARGV[1] || ARGV[0]) == "EventLogger") ? FeldtRuby::EventLogger : FeldtRuby::Logger
 
 class MinimizeRMS < FeldtRuby::Optimize::Objective

@@ -30,7 +30,7 @@ end + [["PopulationSampler", 15]]
 SamplerRadiuses = SamplerRadiuses1
 #SamplerRadiuses = SamplerRadiuses2
 
-NumRepetitionsPerSampler = 50
+NumRepetitionsPerSampler = 5
 
 # This is Lévi function number 13 as stated on the page:
 #  http://en.wikipedia.org/wiki/Test_functions_for_optimization
@@ -201,8 +201,8 @@ Problems3 = [
 
 #Problems = Problems1
 #Problems = Problems2
-#Problems = Problems1 + Problems2
-Problems = Problems3
+Problems = Problems1 + Problems2
+#Problems = Problems3
 
 include FeldtRuby::Optimize
 
@@ -226,7 +226,9 @@ def best_individual(samplerClass, radius, objectiveKlass, minMaxSpec, numSteps)
 
 end
 
-fh = File.open("results_comparing_samplers.csv", "w")
+tstr = Time.now.strftime("%y%m%d_%H%M%S")
+
+fh = File.open("results_comparing_samplers_#{tstr}.csv", "w")
 
 # Find the max number of vars for one of the problems
 MaxNumVars = Problems.map {|p| p[1].length}.max
