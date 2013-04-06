@@ -32,27 +32,6 @@ SamplerRadiuses = SamplerRadiuses1
 
 NumRepetitionsPerSampler = 5
 
-# This is Lévi function number 13 as stated on the page:
-#  http://en.wikipedia.org/wiki/Test_functions_for_optimization
-# It has a global minima at f(1,1) = 0. -10 <= x,y <= 10
-class MinLeviFunctionNum13 < FeldtRuby::Optimize::Objective
-  TwoPi = 2*Math::PI
-  ThreePi = 3*Math::PI
-
-  def objective_min_levi13(candidate)
-    x, y = candidate[0], candidate[1]
-    sin_3pi_x = Math.sin(ThreePi * x)
-    sin_3pi_y = Math.sin(ThreePi * y)
-    sin_2pi_y = Math.sin(TwoPi * y)
-    x_min1 = x - 1.0
-    y_min1 = y - 1.0
-
-    (sin_3pi_x * sin_3pi_x) + 
-      (x_min1 * x_min1) * (1 + (sin_3pi_y * sin_3pi_y)) +
-      (y_min1 * y_min1) * (1 + (sin_3pi_y * sin_2pi_y))
-  end
-end
-
 # This is Beale's function as stated on the page:
 #  http://en.wikipedia.org/wiki/Test_functions_for_optimization
 # It has a global minima at f(3,0.5) = 0. -4.5 <= x,y <= 4.5
