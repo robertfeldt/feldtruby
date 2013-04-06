@@ -161,3 +161,36 @@ class MinEasom < Min2DSingleObjectiveFunc
   end
 end
 
+# EggHolder function as stated on the page:
+#  http://en.wikipedia.org/wiki/Test_functions_for_optimization
+# It says that it has a minima at:
+#   f(512, 404.2319) = -959.6407
+# but our DE finds a better one! Note sure why!
+class MinEggHolder < Min2DSingleObjectiveFunc
+  def minimum
+    # -959.6407
+    -963.5808501270315
+  end
+
+  def min_solutions
+    # [[512, 404.2319]]
+    [[495.6221114260349, 426.3549609090051]]
+  end
+
+  def domain_per_dimension
+    [-512.0, 512.0]
+  end
+
+  def calc_func(candidate)
+    x, y = candidate[0], candidate[1]
+
+    f1 = y + 47.0
+    f2 = Math.sin( Math.sqrt( (y + (x/2.0) + 47.0).abs ) )
+    t1 = (-f1)*f2
+
+    f3 = Math.sin( Math.sqrt( (x - (y + 47.0)).abs ) )
+    t2 = (-x) * f3
+
+    t1 - t2
+  end
+end

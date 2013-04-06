@@ -32,23 +32,6 @@ SamplerRadiuses = SamplerRadiuses1
 
 NumRepetitionsPerSampler = 5
 
-# EggHolder function as stated on the page:
-#  http://en.wikipedia.org/wiki/Test_functions_for_optimization
-class MinEggHolderFunction < FeldtRuby::Optimize::Objective
-  def objective_min_eggholder(candidate)
-    x, y = candidate[0], candidate[1]
-
-    f1 = y + 47.0
-    f2 = Math.sin( Math.sqrt( (y + (x/2.0) + 47.0).abs ) )
-    t1 = (-f1)*f2
-
-    f3 = Math.sin( Math.sqrt( (x - (y + 47.0)).abs ) )
-    t2 = (-x) * f3
-
-    t1 - t2
-  end
-end
-
 # Schwefel 2.22 function as stated in the JADE paper:
 #  http://150.214.190.154/EAMHCO/pdf/JADE.pdf
 class MinSchwefel2_22 < MinFunctionOfDimension
