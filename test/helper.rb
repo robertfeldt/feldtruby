@@ -2,8 +2,13 @@ require 'rubygems'
 require 'minitest/autorun'
 require 'minitest/spec'
 
-$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
-$LOAD_PATH.unshift(File.dirname(__FILE__))
+FeldtRubyTestDir = File.dirname(__FILE__)
+FeldtRubyLibDir = File.join(FeldtRubyTestDir, '..', 'lib')
+FeldtRubyLongTestDir = File.join(FeldtRubyTestDir, 'long_running')
+
+$LOAD_PATH.unshift FeldtRubyLibDir
+$LOAD_PATH.unshift FeldtRubyTestDir
+$LOAD_PATH.unshift FeldtRubyLongTestDir
 
 require 'feldtruby'
 require 'feldtruby/minitest_extensions'

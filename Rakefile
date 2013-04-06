@@ -21,8 +21,18 @@ task :test_sep do
   end
 end
 
-desc "Run all tests"
+desc "Run all normal tests"
 task :test do
+  run_tests Dir["test/test*.rb"]
+end
+
+desc "Run long-running tests"
+task :testlong do
+  run_tests Dir["test/long_running/test*.rb"]
+end
+
+desc "Run all tests"
+task :testall do
   run_tests Dir["test/**/test*.rb"]
 end
 

@@ -105,26 +105,6 @@ class MinEggHolderFunction < FeldtRuby::Optimize::Objective
   end
 end
 
-class MinFunctionOfDimension < FeldtRuby::Optimize::Objective
-  attr_accessor :dimension
-  def minimum
-    0.0
-  end
-  def min_solutions
-    @min_solutions ||= ([[0.0] * dimension])
-  end
-end
-
-# Sphere function as stated in the JADE paper:
-#  http://150.214.190.154/EAMHCO/pdf/JADE.pdf
-class MinSphere < MinFunctionOfDimension
-  def objective_min_func(x)
-    x.inject(0.0) do |sum, xi|
-      sum + (xi*xi)
-    end
-  end
-end
-
 # Schwefel 2.22 function as stated in the JADE paper:
 #  http://150.214.190.154/EAMHCO/pdf/JADE.pdf
 class MinSchwefel2_22 < MinFunctionOfDimension
