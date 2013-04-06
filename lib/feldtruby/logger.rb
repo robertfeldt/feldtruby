@@ -8,7 +8,7 @@ module FeldtRuby
 # Simplest possible logger only prints to STDOUT.
 class Logger
   DefaultParams = {
-    :verbose => true,
+    :verbose => false,
     :print_frequency => 0.5  # Minimum seconds between consecutive messages printed for the same event type
   }
 

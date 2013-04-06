@@ -118,8 +118,9 @@ class Objective
 
 		weights = goal_methods.map {|gm| goalNameToNumberHash[gm]}
 
-		#log_value( :objective_weights_changed, goalNameToNumberHash, 
-		#	"Weights updated from #{@weights} to #{weights}" )
+		logger.log_value :objective_weights_changed, 
+			{"New weights" => goalNameToNumberHash}, 
+			"Weights updated from #{@weights} to #{weights}"
 
 		inc_version_number
 
@@ -223,10 +224,10 @@ class Objective
 		@best_candidate = candidate
 		@best_quality_value = qualityValue
 
-		#log_data :objective_new_best_candidate, {
-		#	:candidate => candidate,
-		#	:quality_value => qualityValue
-		#}, "New best candidate found"
+		logger.log_data :objective_new_best_candidate, {
+			:candidate => candidate,
+			:quality_value => qualityValue
+		}, "New best candidate found"
 
 	end
 
@@ -234,8 +235,8 @@ class Objective
 
 		new_version = @current_version + 1
 
-		#log_value :objective_version_number, new_version, 
-		#	"New version of objective:\n#{self.to_s}"
+		logger.log_value :objective_version_number, new_version, 
+			"New version of objective:\n#{self.to_s}"
 
 		@current_version = new_version
 
@@ -281,10 +282,10 @@ class Objective
 
 			@best_objects[index] = candidate
 
-			#log_data :objective_better_object_for_goal, {
-			#	:better_candidate => candidate,
-			#	:type_of_improvement => typeOfReset
-			#	}, "Better object found for goal #{goal_methods[i]}"
+			logger.log_data :objective_better_object_for_goal, {
+				:better_candidate => candidate,
+				:type_of_improvement => typeOfReset
+				}, "Better object found for goal #{goal_methods[index]}"
 
 			# Reset the best object since we have a new scale
 			@best_candidate = nil
