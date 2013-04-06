@@ -421,7 +421,7 @@ describe "Using MWGR for range-independent aggregate fitness calc" do
     @o = OneMinOneMaxObjective1.new(@qa)
   end
 
-  it 'works for simple scenario' do
+  it 'works for a simple scenario' do
     q1 = @o.quality_of([1,2]) # [1, 3] => 0.0
     q1.value.must_equal 0.0 # First eval must give perfect score since scales are tight...
 
@@ -432,5 +432,6 @@ describe "Using MWGR for range-independent aggregate fitness calc" do
     q3 = @o.quality_of([1,4]) # [3, 5] => (0+1.0)/2
     q3.value.must_equal 0.5 # Perfect on one (max sum) and worst on other (min distance) so (0+1.0)/2
     q2.value.must_equal( ((2.0-1.0)/(3.0-1.0) + ((5.0-4.0)/(5.0-3.0)))/2.0 )
+    q1.value.must_equal( ((1.0-1.0)/(3.0-1.0) + ((5.0-3.0)/(5.0-3.0)))/2.0 )
   end
 end

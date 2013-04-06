@@ -39,15 +39,15 @@ describe "Sphere function" do
     best.must_be_close_to_one_solution_of obj
   end
 
-  it 'can optimize the Sphere function in 10 dimensions' do
-    best, obj = best_from_de_on_objective MinSphere.new, 10, 60_000
-    best.must_be_close_to_one_solution_of obj
-  end
-
-  it 'can optimize the Sphere function in 30 dimensions' do
-    best, obj = best_from_de_on_objective MinSphere.new, 30, 220_000
-    # We don't test closeness since it might take very long for 30D to get close on all dimensions.
-  end
+#  it 'can optimize the Sphere function in 10 dimensions' do
+#    best, obj = best_from_de_on_objective MinSphere.new, 10, 60_000
+#    best.must_be_close_to_one_solution_of obj
+#  end
+#
+#  it 'can optimize the Sphere function in 30 dimensions' do
+#    best, obj = best_from_de_on_objective MinSphere.new, 30, 220_000
+#    # We don't test closeness since it might take very long for 30D to get close on all dimensions.
+#  end
 end
 
 describe "Levi13 function" do
@@ -104,8 +104,8 @@ describe "EggHolder function" do
   it 'can optimize the Eggholder function' do
     objective = MinEggHolder.new
     ss = objective.search_space
-    de = DEOptimizer.new(objective, ss, {:verbose => false, 
-      :maxNumSteps => 30_000, :samplerRadius => 5})
+    de = DEOptimizer.new(objective, ss, {:verbose => true, 
+      :maxNumSteps => 25_000, :samplerRadius => 6})
     best = de.optimize().to_a
 
     val = objective.calc_func(best)

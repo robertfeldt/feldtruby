@@ -169,12 +169,12 @@ end
 class MinEggHolder < Min2DSingleObjectiveFunc
   def minimum
     # -959.6407
-    -963.5808501270315
+    -963.5808501270542
   end
 
   def min_solutions
     # [[512, 404.2319]]
-    [[495.6221114260349, 426.3549609090051]]
+    [[495.6221190220226, 426.3549675681817]]
   end
 
   def domain_per_dimension
