@@ -459,9 +459,9 @@ class QualityValue
   end
 
   def to_s
-    subqs = sub_qualities.map {|f| f.to_significant_digits(5)}
+    subqs = sub_qualities.map {|f| f.to_significant_digits(3)}
     # Note! We ask for the value first which guarantees that we then have a version number.
-    qstr = "%.7f" % value
+    qstr = "#{value.to_significant_digits(4)}"
     "#{qstr} (SubQs = #{subqs.inspect}, ver. #{@version})"
   end
 end

@@ -51,7 +51,7 @@ describe "Sphere function" do
   end
 
   it 'can optimize the Sphere function in 30 dimensions' do
-    best, obj = best_from_de_on_sphere 30, 225_000
+    best, obj = best_from_de_on_sphere 30, 210_000
 
     val = obj.calc_func(best)
     val.must_be_close_to 0.0
@@ -97,10 +97,10 @@ describe "Easom function" do
   it 'can optimize the Easom function' do
     objective = MinEasom.new
     ss = objective.search_space
-    # Why can't we do this in 25_000 evals anymore? We did it before...
-    de = DEOptimizer.new(objective, ss, {:verbose => false, 
-      :maxNumSteps => 30_000, :printFrequency => 0.0, 
-      :samplerRadius => 10})
+    # Why can't we do this in 25_000 evals anymore? We did it before. Repeatedly. Very strange.
+    de = DEOptimizer.new(objective, ss, {:verbose => true, 
+      :maxNumSteps => 25_000, :printFrequency => 0.0, 
+      :samplerRadius => 5})
     best = de.optimize().to_a
 
     val = objective.calc_func(best)

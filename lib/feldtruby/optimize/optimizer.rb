@@ -86,7 +86,7 @@ class Optimizer
 				"New best" => best_new,
 				"New quality" => @objective.quality_of(best_new), 
 				"Old best" => @best,
-				"Old quality" => qb}, "New best solution found", true
+				"Old quality" => qb}, "Optimizer (step #{@num_optimization_steps}): New best solution found", true
 			@best = best_new
 			true
 		else
@@ -211,7 +211,7 @@ DefaultOptimizationOptions = {
 	:verbose => true,
 	:populationSize => 200,
 	:samplerClass => FeldtRuby::Optimize::RadiusLimitedPopulationSampler,
-	:samplerRadius => 10 # Max distance between individuals selected in same tournament
+	:samplerRadius => 8 # Max distance between individuals selected in same tournament.
 }
 
 def self.override_default_options_with(options)
