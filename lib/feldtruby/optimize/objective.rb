@@ -39,7 +39,7 @@ class Objective
   # Candidates are always compared based on the latest version of an objective. 
   attr_accessor :current_version
 
-  attr_reader :global_min_values_per_aspect, :global_max_values_per_aspect
+  attr_reader :global_min_values_per_goal, :global_max_values_per_goal
 
   def initialize(qualityAggregator = WeightedSumAggregator.new, 
     comparator = LowerAggregateQualityIsBetterComparator.new)
@@ -57,11 +57,11 @@ class Objective
 
     # We set all mins to INFINITY. This ensures that the first value seen will
     # be smaller, and thus set as the new min.
-    @global_min_values_per_aspect = [Float::INFINITY] * num_goals
+    @global_min_values_per_goal = [Float::INFINITY] * num_goals
 
     # We set all maxs to -INFINITY. This ensures that the first value seen will
     # be larger, and thus set as the new max.
-    @global_max_values_per_aspect = [-Float::INFINITY] * num_goals
+    @global_max_values_per_goal = [-Float::INFINITY] * num_goals
 
     setup_logger_and_distribute_to_instance_variables()
 
@@ -258,19 +258,19 @@ class Objective
   # Update the global min and max for the goal method with _index_ if
   # the _qValue_ is less than or
   def update_global_min_and_max(index, qValue, candidate)
-    min = @global_min_values_per_aspect[index]
-    max = @global_max_values_per_aspect[index]
+    min = @global_min_values_per_goal[index]
+    max = @global_max_values_per_goal[index]
 
     if qValue < min
 
-      @global_min_values_per_aspect[index] = qValue
+      @global_min_values_per_goal[index] = qValue
 
       reset_quality_scale candidate, index, :min
 
     end
     if qValue > max
 
-      @global_max_values_per_aspect[index] = qValue
+      @global_max_values_per_goal[index] = qValue
 
       reset_quality_scale candidate, index, :max
 
@@ -368,7 +368,7 @@ end
 class Objective::SumOfWeigthedGlobalRatios < Objective::WeightedSumAggregator
   def ratio(index, value, min, max)
     return 1000.0 if value == nil # We heavily penalize if one sub-quality could not be calculated. Max is otherwise 1.0.
-    if objective.is_min_aspect?(index)
+    if objective.is_min_goal?(index)
       numerator = value - min
     else
       numerator = max - value
@@ -388,7 +388,7 @@ class Objective::SumOfWeigthedGlobalRatios < Objective::WeightedSumAggregator
     # we have already taken the signs into account in the ratio method.
     sum = 0.0
     ratios.each_with_index do |r, i|
-      sum += (qv * weights[i])
+      sum += (r * weights[i])
     end
 
     sum / weights.sum.to_f

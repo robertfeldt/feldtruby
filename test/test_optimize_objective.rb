@@ -179,28 +179,28 @@ describe "two sub-objectives" do
   end
 
   it "returns the global min value per aspect, which is initially at a max value since we might not now its range" do
-    @o.global_min_values_per_aspect.must_equal [Float::INFINITY, Float::INFINITY]
+    @o.global_min_values_per_goal.must_equal [Float::INFINITY, Float::INFINITY]
   end
 
   it "returns the global max value per aspect, which is initially at a min value since we might not now its range" do
-    @o.global_max_values_per_aspect.must_equal [-Float::INFINITY, -Float::INFINITY]
+    @o.global_max_values_per_goal.must_equal [-Float::INFINITY, -Float::INFINITY]
   end
 
   it "correctly updates the global min and maxs, given a sequence of updates" do
     i1 = [1,2]
     @o.update_global_mins_and_maxs([1,3], i1)
-    @o.global_min_values_per_aspect.must_equal [1,3]
-    @o.global_max_values_per_aspect.must_equal [1,3]
+    @o.global_min_values_per_goal.must_equal [1,3]
+    @o.global_max_values_per_goal.must_equal [1,3]
 
     i2 = [1,3]
     @o.update_global_mins_and_maxs([2,4], i2)
-    @o.global_min_values_per_aspect.must_equal [1,3]
-    @o.global_max_values_per_aspect.must_equal [2,4]
+    @o.global_min_values_per_goal.must_equal [1,3]
+    @o.global_max_values_per_goal.must_equal [2,4]
 
     i3 = [2,2,2,2]
     @o.update_global_mins_and_maxs([0,8], i3)
-    @o.global_min_values_per_aspect.must_equal [0,3]
-    @o.global_max_values_per_aspect.must_equal [2,8]
+    @o.global_min_values_per_goal.must_equal [0,3]
+    @o.global_max_values_per_goal.must_equal [2,8]
   end
 
   it "can return the vector of sub_objective values for a candidate" do
@@ -412,5 +412,25 @@ describe "calculating quality with weights" do
     q2 = @o.quality_of(i1)
     q2.value.must_equal( 5*((2-1) + (3-2)) + (-30)*(1+2+3) )
     q2.sub_qualities.must_equal [2.0, 6.0]
+  end
+end
+
+describe "Using MWGR for range-independent aggregate fitness calc" do
+  before do
+    @qa = FeldtRuby::Optimize::Objective::SumOfWeigthedGlobalRatios.new
+    @o = OneMinOneMaxObjective1.new(@qa)
+  end
+
+  it 'works for simple scenario' do
+    q1 = @o.quality_of([1,2]) # [1, 3] => 0.0
+    q1.value.must_equal 0.0 # First eval must give perfect score since scales are tight...
+
+    q2 = @o.quality_of([1,3]) # [2, 4] => 0.5
+    q2.value.must_equal 0.5 # Perfect on one (max sum) and worst on other (min distance) so (0+1.0)/2
+    q1.value.must_equal 0.5 # Perfect on one (min distance) and worst on other (max sum) so (1.0+0.0)/2
+
+    q3 = @o.quality_of([1,4]) # [3, 5] => (0+1.0)/2
+    q3.value.must_equal 0.5 # Perfect on one (max sum) and worst on other (min distance) so (0+1.0)/2
+    q2.value.must_equal( ((2.0-1.0)/(3.0-1.0) + ((5.0-4.0)/(5.0-3.0)))/2.0 )
   end
 end
