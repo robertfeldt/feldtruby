@@ -32,11 +32,6 @@ class TestArrayBasicStats < MiniTest::Unit::TestCase
 		assert_equal 2.0, [2, 4, 4, 4, 5, 5, 7, 9].stdev 
 	end
 
-	def test_root_mean_square
-		assert_equal Math.sqrt((1*1 + 2*2)/2.0), [1, 2].root_mean_square
-		assert_equal Math.sqrt((10*10 + 243*243)/2.0), [10, 243].rms
-	end
-
 	def test_weighted_sum_one_element
 		assert_equal 1, [1].weighted_sum([1])
 		assert_equal 2, [1].weighted_sum([2])
@@ -88,15 +83,28 @@ describe "Basic statistics" do
 		end
 	end
 
-	describe "rms_from_scalar" do
-		it "is the same as rms if scalar is 0.0" do
-			a = [1,2,3,4,5]
-			a.rms_from_scalar(0.0).must_be_within_delta a.rms
+	describe "Root mean square" do
+		it 'can calculate the RMS on an array of numbers' do
+			[1, 2].root_mean_square.must_equal Math.sqrt((1*1 + 2*2)/2.0)
+			[10, 243].rms.must_equal Math.sqrt((10*10 + 243*243)/2.0)
 		end
 
-		it "is correct for concrete example" do
-			a = [1,2]
-			a.rms_from_scalar(1.5).must_equal Math.sqrt( (0.5**2 + 0.5**2)/2 )
+		describe "rms_from_scalar" do
+			it "is the same as rms if scalar is 0.0" do
+				a = [1,2,3,4,5]
+				a.rms_from_scalar(0.0).must_be_within_delta a.rms
+			end
+	
+			it "is correct for concrete example" do
+				a = [1,2]
+				a.rms_from_scalar(1.5).must_equal Math.sqrt( (0.5**2 + 0.5**2)/2 )
+			end
+		end
+
+		it 'can calculate the rms between two arrays' do
+			a = [1, 2, 3]
+			b = [2, 4, 7]
+			a.rms_from(b).must_equal Math.sqrt((1-2)**2 + (2-4)**2 + (3-7)**2)
 		end
 	end
 

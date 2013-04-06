@@ -129,6 +129,11 @@ module BasicStatistics
 		sum
 	end
 
+	# Root mean square from another vector
+	def rms_from(other)
+		Math.sqrt(sum_squared_error(other))
+	end
+
 	# Return summary stats for an array of numbers.
 	def summary_stats
 		return "" if length == 0
