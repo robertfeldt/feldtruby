@@ -194,3 +194,23 @@ class MinEggHolder < Min2DSingleObjectiveFunc
     t1 - t2
   end
 end
+
+# Schwefel 2.22 function as stated in the JADE paper:
+#  http://150.214.190.154/EAMHCO/pdf/JADE.pdf
+class MinSchwefel2_22 < MinSingleObjectiveFuncOfDimensions
+  def domain_per_dimension
+    [-10.0, 10.0]
+  end
+
+  def calc_func(x)
+    t1 = x.inject(0.0) do |sum, xi|
+      sum + xi.abs
+    end
+
+    t2 = x.inject(0.0) do |mult, xi|
+      mult * xi.abs
+    end
+
+    t1 + t2
+  end
+end

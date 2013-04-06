@@ -19,46 +19,35 @@ module MiniTest::Expectations
   infect_an_assertion :assert_close_to_one_solution, :must_be_close_to_one_solution_of
 end
 
+def best_from_de_on_objective(objective, dimensions, numSteps = 25_000, verbose = false)
+  objective.dimensions = dimensions
+  ss = objective.search_space
+  de = DEOptimizer.new(objective, ss, {:verbose => verbose, 
+    :maxNumSteps => numSteps})
+  best = de.optimize().to_a
+
+  val = objective.calc_func(best)
+  val.must_be_close_to objective.minimum
+  val.must_be :>, objective.minimum
+
+  return best, objective
+end
+
 describe "Sphere function" do
-  def best_from_de_on_sphere(dimensions, numSteps = 25_000, verbose = false)
-    sphere = MinSphere.new
-    sphere.dimensions = dimensions
-    ss = sphere.search_space
-    de = DEOptimizer.new(sphere, ss, {:verbose => verbose, 
-      :maxNumSteps => numSteps})
-    best = de.optimize().to_a
-    return best, sphere
-  end
-
   it 'can optimize the Sphere function in 3 dimensions' do
-    best, sphere3 = best_from_de_on_sphere 3, 15_000
-
-    val = sphere3.calc_func(best)
-    val.must_be_close_to 0.0
-    val.must_be :>, 0.0
-
-    best.must_be_close_to_one_solution_of sphere3
+    best, obj = best_from_de_on_objective MinSphere.new, 3, 12_000
+    best.must_be_close_to_one_solution_of obj
   end
 
   it 'can optimize the Sphere function in 10 dimensions' do
-    best, sphere10 = best_from_de_on_sphere 10, 60_000
-
-    val = sphere10.calc_func(best)
-    val.must_be_close_to 0.0
-    val.must_be :>=, 0.0
-
-    best.must_be_close_to_one_solution_of sphere10
+    best, obj = best_from_de_on_objective MinSphere.new, 10, 60_000
+    best.must_be_close_to_one_solution_of obj
   end
 
-#  it 'can optimize the Sphere function in 30 dimensions' do
-#    best, obj = best_from_de_on_sphere 30, 210_000
-#
-#    val = obj.calc_func(best)
-#    val.must_be_close_to 0.0
-#    val.must_be :>=, 0.0
-#
-#    # We don't test closeness since it might take very long for 30D to get close on all dimensions.
-#  end
+  it 'can optimize the Sphere function in 30 dimensions' do
+    best, obj = best_from_de_on_objective MinSphere.new, 30, 220_000
+    # We don't test closeness since it might take very long for 30D to get close on all dimensions.
+  end
 end
 
 describe "Levi13 function" do
@@ -116,7 +105,7 @@ describe "EggHolder function" do
     objective = MinEggHolder.new
     ss = objective.search_space
     de = DEOptimizer.new(objective, ss, {:verbose => false, 
-      :maxNumSteps => 25_000, :samplerRadius => 5})
+      :maxNumSteps => 30_000, :samplerRadius => 5})
     best = de.optimize().to_a
 
     val = objective.calc_func(best)
@@ -124,5 +113,12 @@ describe "EggHolder function" do
     val.must_be :>=, objective.minimum
 
     best.must_be_close_to_one_solution_of objective, 0.01
+  end
+end
+
+describe "Schwefel 2.22 function" do
+  it 'can optimize the Schwefel 2.22 function in 3 dimensions' do
+    best, obj = best_from_de_on_objective MinSchwefel2_22.new, 3, 12_000
+    best.must_be_close_to_one_solution_of obj
   end
 end
