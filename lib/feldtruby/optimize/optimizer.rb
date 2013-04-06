@@ -23,7 +23,7 @@ class Optimizer
 
 		# Must setup logger before setting options since verbosity of logger is
 		# an option!
-		setup_logger_and_distribute_to_instance_variables()
+		setup_logger_and_distribute_to_instance_variables(options)
 
 		initialize_options(@options)
 	end
@@ -35,11 +35,11 @@ class Optimizer
 
 	# Optimize the objective in the given search space. 
 	def optimize()
+		logger.log "Optimization with optimizer #{self.class.inspect} started"
 		@num_optimization_steps = 0
 		# Set up a random best since other methods require it
 		update_best([search_space.gen_candidate()])
 		begin
-			logger.log "Optimization with optimizer #{self.class.inspect} started"
 			while !termination_criterion.terminate?(self)
 				new_candidates = optimization_step()
 				@num_optimization_steps += 1
@@ -86,7 +86,7 @@ class Optimizer
 				"New best" => best_new,
 				"New quality" => @objective.quality_of(best_new), 
 				"Old best" => @best,
-				"Old quality" => qb}, "New best candidate found", true
+				"Old quality" => qb}, "New best solution found", true
 			@best = best_new
 			true
 		else

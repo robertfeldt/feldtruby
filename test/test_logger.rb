@@ -6,7 +6,7 @@ describe 'Logger' do
   before do
     @sio = StringIO.new
     @l = FeldtRuby::Logger.new @sio, {:verbose => true, 
-      :print_frequency => 0.0 # So everything is logged
+      :printFrequency => 0.0 # So everything is logged
     }
   end
 
@@ -55,7 +55,7 @@ describe 'Logger with a non-zero print frequency' do
   before do
     @sio = StringIO.new
     @l = FeldtRuby::Logger.new @sio, {:verbose => true, 
-      :print_frequency => 0.1
+      :printFrequency => 0.1
     }
   end
 
@@ -96,7 +96,7 @@ describe 'Logger with two IO output streams' do
   it 'logs to all streams of more than one' do
     sio1 = StringIO.new
     l = FeldtRuby::Logger.new sio1, {:verbose => true, 
-      :print_frequency => 0.0
+      :printFrequency => 0.0
     }
     sio2 = StringIO.new
     l.add_io sio2
@@ -118,7 +118,7 @@ describe 'Logger with two IO output streams' do
   it 'can add filenames to which log output should be written' do
     sio1 = StringIO.new
     l = FeldtRuby::Logger.new sio1, {:verbose => true, 
-      :print_frequency => 0.0
+      :printFrequency => 0.0
     }
 
     filename = "temp390580943850834.log"

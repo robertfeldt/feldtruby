@@ -32,41 +32,6 @@ SamplerRadiuses = SamplerRadiuses1
 
 NumRepetitionsPerSampler = 5
 
-# This is Beale's function as stated on the page:
-#  http://en.wikipedia.org/wiki/Test_functions_for_optimization
-# It has a global minima at f(3,0.5) = 0. -4.5 <= x,y <= 4.5
-class MinBealeFunction < FeldtRuby::Optimize::Objective
-  def objective_min_beales_func(candidate)
-    x, y = candidate[0], candidate[1]
-
-    t1 = 1.5 - x + (x*y)
-    t2 = 2.25 - x + (x*y*y)
-    t3 = 2.625 - x + (x*y*y*y)
-
-    (t1*t1) + (t2*t2) + (t3*t3)
-  end
-end
-
-# This is Easom's function as stated on the page:
-#  http://en.wikipedia.org/wiki/Test_functions_for_optimization
-# It has a global minima at f(3,0.5) = 0. -4.5 <= x,y <= 4.5
-class MinEasomFunction < FeldtRuby::Optimize::Objective
-  def objective_min_easom_func(candidate)
-    x, y = candidate[0], candidate[1]
-
-    f1 = Math.cos(x)
-
-    f2 = Math.cos(y)
-
-    x_min_pi = x - Math::PI
-    y_min_pi = y - Math::PI
-
-    f3 = Math.exp(-(x_min_pi*x_min_pi + y_min_pi*y_min_pi))
-
-    (-f1) * f2 * f3
-  end
-end
-
 # EggHolder function as stated on the page:
 #  http://en.wikipedia.org/wiki/Test_functions_for_optimization
 class MinEggHolderFunction < FeldtRuby::Optimize::Objective

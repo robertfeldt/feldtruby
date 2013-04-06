@@ -9,7 +9,7 @@ module FeldtRuby
 class Logger
   DefaultParams = {
     :verbose => false,
-    :print_frequency => 0.5  # Minimum seconds between consecutive messages printed for the same event type
+    :printFrequency => 0.0  # Minimum seconds between consecutive messages printed for the same event type
   }
 
   UnixEpoch = Time.at(0)
@@ -24,7 +24,7 @@ class Logger
 
     self.verbose = @params[:verbose]
 
-    self.print_frequency = @params[:print_frequency]
+    self.print_frequency = @params[:printFrequency]
 
     @ios = []
 
@@ -62,7 +62,7 @@ class Logger
 
   # Set the minimum time between printing successive messages of the same type.
   def print_frequency=(seconds = 1.0)
-    @print_frequency = @params[:print_frequency] = seconds
+    @print_frequency = @params[:printFrequency] = seconds
   end
 
   # Add one more _io_ stream to which events are logged.
@@ -175,7 +175,15 @@ end
 module Logging
   attr_accessor :logger
 
-  def setup_logger_and_distribute_to_instance_variables(logger = nil)
+  def setup_logger_and_distribute_to_instance_variables(loggerOrOptions = nil)
+
+    if Hash === loggerOrOptions
+      options = loggerOrOptions
+      logger = nil
+    else
+      options = {}
+      logger = loggerOrOptions
+    end
 
     # Precedence for loggers if several has been setup:
     #  1. One specified as parameter to this method
@@ -183,7 +191,7 @@ module Logging
     #  3. First one found on an instance var
     #  4. Create a new standard one
     self.logger = logger || self.logger || __find_logger_set_on_instance_vars() ||
-      new_default_logger()
+      new_default_logger(options)
 
     # Now distribute the preferred logger to all instance vars, recursively.
     self.instance_variables.each do |ivar_name|
@@ -199,8 +207,8 @@ module Logging
   end
 
   # Override to use another logger as default if no logger is found.
-  def new_default_logger
-    FeldtRuby::Logger.new
+  def new_default_logger(options = {})
+    FeldtRuby::Logger.new(STDOUT, options)
   end
 
   # Find a logger if one has been set on any of my instance vars or their

@@ -60,19 +60,19 @@ class DEOptimizerBase < EvolutionaryOptimizer
 
 		best, worst = objective.rank_candidates([target, trial])
 
-		# Supplant the target vector with the trial vector if better
+		# Supplant the target vector with the trial vector if trial vector is better.
 		if best != target
 			logger.log_data :better_candidate_found, {
-				"Candidate" => best, 
-				"Quality" => @objective.quality_of(best)}, "Trial vector was better", true
-			trial_better = true
+				"Trial" => trial, 
+				"Trial Quality" => @objective.quality_of(trial),
+				"Target" => target, 
+				"Target Quality" => @objective.quality_of(target)
+				}, "Trial (child) vector was better than target (parent) vector", true
 			update_candidate_in_population(target_index, trial)
+			feedback_on_trial_vs_target(trial, target, true)
 		else
-			trial_better = false
+			feedback_on_trial_vs_target(trial, target, false)
 		end
-
-		# Give feedback to strategy since some strategies use this to self-adapt
-		feedback_on_trial_vs_target(trial, target, trial_better)
 
 		[best]
 	end
