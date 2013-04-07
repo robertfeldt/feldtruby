@@ -399,19 +399,46 @@ describe "calculating quality with weights" do
     @o.weights = {:objective_min_distance_between => 2, :objective_max_sum => 3}
   end
 
-  it "uses the weights when calculating quality" do
+  it "uses the weights when calculating quality, even after weights change" do
     i1 = [1,2,3]
-    @o.weights = {:objective_min_distance_between => 2, :objective_max_sum => 3}
     q1 = @o.quality_of(i1)
-    q1.value.must_equal( 2*((2-1) + (3-2)) + (-3)*(1+2+3) )
     q1.sub_qualities.must_equal [2.0, 6.0]
+    q1.value.must_equal( 2*((2-1) + (3-2)) + (-3)*(1+2+3) )
     q1.candidate.must_equal i1
     q1.objective.must_equal @o
 
     @o.weights = {:objective_min_distance_between => 5, :objective_max_sum => 30}
     q2 = @o.quality_of(i1)
-    q2.value.must_equal( 5*((2-1) + (3-2)) + (-30)*(1+2+3) )
     q2.sub_qualities.must_equal [2.0, 6.0]
+    q2.value.must_equal( 5*((2-1) + (3-2)) + (-30)*(1+2+3) )
+
+    i2 = [1,2,5]
+    q3 = @o.quality_of i2
+    q3.sub_qualities.must_equal [4.0, 8.0]
+    q3.value.must_equal( 5*4.0 + (-30)*8.0 )
+
+    @o.weights = {:objective_min_distance_between => -10, :objective_max_sum => 1}
+    q3.value.must_equal( (-10)*4.0 + (-1)*8.0 )
+    q2.value.must_equal( (-10)*2.0 + (-1)*6.0 )
+    q1.value.must_equal( (-10)*2.0 + (-1)*6.0 )
+
+    @o.weights = {:objective_min_distance_between => -4, :objective_max_sum => -2}
+    q3.value.must_equal( (-4)*4.0 + (2)*8.0 ) # 0.0
+    q2.value.must_equal( (-4)*2.0 + (2)*6.0 ) # 4.0
+    q1.value.must_equal( (-4)*2.0 + (2)*6.0 )
+
+    i3 = [1,2,3,4,5,6]
+    q4 = @o.quality_of i3
+    q4.sub_qualities.must_equal [5.0, 21.0]
+    q4.value.must_equal( (-4)*5.0 + (2)*21.0 ) # 22.0
+
+    @o.rank_candidates([i1, i2, i3]).must_equal [i2, i1, i3]
+
+    @o.weights = {:objective_min_distance_between => 1, :objective_max_sum => 100}
+    @o.rank_candidates([i1, i2, i3]).must_equal [i3, i2, i1]
+
+    @o.weights = {:objective_min_distance_between => 100, :objective_max_sum => 1}
+    @o.rank_candidates([i1, i2, i3]).must_equal [i1, i2, i3]
   end
 end
 
