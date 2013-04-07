@@ -20,65 +20,53 @@ module MiniTest::Expectations
 end
 
 def best_from_de_on_objective(objective, dimensions, numSteps = 25_000, verbose = false)
-  objective.dimensions = dimensions
+  objective.dimensions = dimensions if objective.respond_to?(:dimensions=)
   ss = objective.search_space
   de = DEOptimizer.new(objective, ss, {:verbose => verbose, 
     :maxNumSteps => numSteps})
+
+  start_time = Time.now
   best = de.optimize().to_a
+  elapsed = Time.now - start_time
 
   val = objective.calc_func(best)
   val.must_be_close_to objective.minimum
   val.must_be :>, objective.minimum
 
-  return best, objective
+  return best, objective, elapsed
 end
 
 describe "Sphere function" do
   it 'can optimize the Sphere function in 3 dimensions' do
-    best, obj = best_from_de_on_objective MinSphere.new, 3, 12_000
+    best, obj, time = best_from_de_on_objective MinSphere.new, 3, 12_000
+    best.must_be_close_to_one_solution_of obj
+    time.must_be :<, 1.5
+  end
+
+  it 'can optimize the Sphere function in 10 dimensions' do
+    best, obj = best_from_de_on_objective MinSphere.new, 10, 60_000
     best.must_be_close_to_one_solution_of obj
   end
 
-#  it 'can optimize the Sphere function in 10 dimensions' do
-#    best, obj = best_from_de_on_objective MinSphere.new, 10, 60_000
-#    best.must_be_close_to_one_solution_of obj
-#  end
-#
-#  it 'can optimize the Sphere function in 30 dimensions' do
-#    best, obj = best_from_de_on_objective MinSphere.new, 30, 220_000
-#    # We don't test closeness since it might take very long for 30D to get close on all dimensions.
-#  end
+  it 'can optimize the Sphere function in 30 dimensions' do
+    best, obj = best_from_de_on_objective MinSphere.new, 30, 220_000
+    # We don't test closeness since it might take very long for 30D to get close on all dimensions.
+  end
 end
 
 describe "Levi13 function" do
   it 'can optimize the Levi13 function' do
-    objective = MinLevi13.new
-    ss = objective.search_space
-    de = DEOptimizer.new(objective, ss, {:verbose => false, 
-      :maxNumSteps => 7_500})
-    best = de.optimize().to_a
-
-    val = objective.calc_func(best)
-    val.must_be_close_to objective.minimum
-    val.must_be :>=, objective.minimum
-
-    best.must_be_close_to_one_solution_of objective, 0.01
+    best, obj, time = best_from_de_on_objective MinLevi13.new, nil, 7_500
+    best.must_be_close_to_one_solution_of obj
+    time.must_be :<, 1.0
   end
 end
 
 describe "Beale function" do
   it 'can optimize the Beale function' do
-    objective = MinBeale.new
-    ss = objective.search_space
-    de = DEOptimizer.new(objective, ss, {:verbose => false, 
-      :maxNumSteps => 7_500})
-    best = de.optimize().to_a
-
-    val = objective.calc_func(best)
-    val.must_be_close_to objective.minimum
-    val.must_be :>=, objective.minimum
-
-    best.must_be_close_to_one_solution_of objective, 0.01
+    best, obj, time = best_from_de_on_objective MinBeale.new, nil, 7_500
+    best.must_be_close_to_one_solution_of obj
+    time.must_be :<, 1.0
   end
 end
 
@@ -104,7 +92,7 @@ describe "EggHolder function" do
   it 'can optimize the Eggholder function' do
     objective = MinEggHolder.new
     ss = objective.search_space
-    de = DEOptimizer.new(objective, ss, {:verbose => true, 
+    de = DEOptimizer.new(objective, ss, {:verbose => false, 
       :maxNumSteps => 25_000, :samplerRadius => 6})
     best = de.optimize().to_a
 
@@ -118,7 +106,8 @@ end
 
 describe "Schwefel 2.22 function" do
   it 'can optimize the Schwefel 2.22 function in 3 dimensions' do
-    best, obj = best_from_de_on_objective MinSchwefel2_22.new, 3, 12_000
+    best, obj, time = best_from_de_on_objective MinSchwefel2_22.new, 3, 12_000
     best.must_be_close_to_one_solution_of obj
+    time.must_be :<, 1.5
   end
 end
