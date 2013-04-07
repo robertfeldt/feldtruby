@@ -16,7 +16,7 @@ end
 
 describe "EliteArchive" do
   before do
-    @o = TwoMinOneMax.new
+    @o = TwoMinOneMax.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new)
     @a = FeldtRuby::Optimize::EliteArchive.new(@o, {
     :NumTopPerGoal => 2,
     :NumTopAggregate => 3})

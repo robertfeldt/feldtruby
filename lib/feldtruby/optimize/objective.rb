@@ -41,7 +41,7 @@ class Objective
 
   attr_reader :global_min_values_per_goal, :global_max_values_per_goal
 
-  def initialize(qualityAggregator = WeightedSumAggregator.new, 
+  def initialize(qualityAggregator = MeanWeigthedGlobalRatios.new, #WeightedSumAggregator.new, 
     comparator = LowerAggregateQualityIsBetterComparator.new)
 
     # A quality aggregator maps the goal values of a candidate to a single number.
@@ -360,12 +360,13 @@ end
 #  P. J. Bentley and J. P. Wakefield, "Finding Acceptable Solutions in the 
 #  Pareto-Optimal Range using Multiobjective Genetic Algorithms", 1997
 #  http://eprints.hud.ac.uk/4052/1/PB_%26_JPW_1997_Finding_Acceptable_Solutions.htm
-# with the difference that that lower values indicate better quality.
+# with the difference that lower values indicate better quality and we use
+# mean instead of sum, and thus call it MWGR.
 # It is the weighted sum of the ratios to the best so far for each goal.
 # One of its benefits is that one need not sort individuals in relation to
 # their peers; the aggregate fitness value is fully determined by the individual
 # and the global min and max values for each objective.
-class Objective::SumOfWeigthedGlobalRatios < Objective::WeightedSumAggregator
+class Objective::MeanWeigthedGlobalRatios < Objective::WeightedSumAggregator
   def ratio(index, value, min, max)
     return 1000.0 if value == nil # We heavily penalize if one sub-quality could not be calculated. Max is otherwise 1.0.
     if objective.is_min_goal?(index)

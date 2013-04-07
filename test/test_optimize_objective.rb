@@ -12,7 +12,7 @@ end
 
 describe "a single minimizing objective" do
   before do
-    @o = SingleObjective1.new
+    @o = SingleObjective1.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new)
   end
 
   it "has one goal" do
@@ -162,7 +162,7 @@ end
 
 describe "two sub-objectives" do
   before do
-    @o = TwoMinObjectives1.new
+    @o = TwoMinObjectives1.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new)
   end
 
   it "has two aspects/sub-objectives" do
@@ -291,8 +291,8 @@ end
 
 describe "the objective itself and its updates" do
   before do
-    @o = SingleObjective1.new
-    @o2 = TwoMinObjectives1.new
+    @o = SingleObjective1.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new)
+    @o2 = TwoMinObjectives1.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new)
     @c = [1,2,3]
   end
 
@@ -383,7 +383,7 @@ end
 
 describe "calculating quality when there is one max goal" do
   before do
-    @o = OneMinOneMaxObjective1.new
+    @o = OneMinOneMaxObjective1.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new)
   end
 
   it "inverts the max value so that it grows downwards" do
@@ -395,7 +395,7 @@ end
 
 describe "calculating quality with weights" do
   before do
-    @o = OneMinOneMaxObjective1.new
+    @o = OneMinOneMaxObjective1.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new)
     @o.weights = {:objective_min_distance_between => 2, :objective_max_sum => 3}
   end
 
@@ -444,7 +444,7 @@ end
 
 describe "Using MWGR for range-independent aggregate fitness calc" do
   before do
-    @qa = FeldtRuby::Optimize::Objective::SumOfWeigthedGlobalRatios.new
+    @qa = FeldtRuby::Optimize::Objective::MeanWeigthedGlobalRatios.new
     @o = OneMinOneMaxObjective1.new(@qa)
   end
 
