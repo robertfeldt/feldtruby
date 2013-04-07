@@ -188,11 +188,27 @@ class DEOptimizer_Best_1_Bin < DEOptimizerBase
 	include DE_MutationStrategy_Best_1
 end
 
+# The DE/best/1/* mutation strategy.
+module DE_MutationStrategy_Best_2
+	# We need four parents for two donor vectors. And then the target, so 1+4 in total.
+	def num_parents_to_sample; 5; end
+
+	def mutate(targetIndex, donorParentsIndices)
+		p1, p2, p3, p4 = get_candidates_with_indices(donorParentsIndices)
+		f = scale_factor(targetIndex)
+		candidate_from_array(best) + (f * (p1 - p2)) + (f * (p3 - p4))
+	end
+end
+
+class DEOptimizer_Best_2_Bin < DEOptimizer_Best_1_Bin
+	include DE_MutationStrategy_Best_2
+end
+
 # DE/rand/1/bin is the default DE optimizer since it does not converge too
 # quickly but is generally good. For many problems the DEOptimizer_Best_1_Bin
 # gives better results faster though.
 DEOptimizer = DEOptimizer_Rand_1_Bin
-#DEOptimizer = DEOptimizer_Best_1_Bin
+#DEOptimizer = DEOptimizer_Best_2_Bin
 
 # Optimize the _numVariables_ between the _min_ and _max_ values given _costFunction_.
 # Default is to minimize.
