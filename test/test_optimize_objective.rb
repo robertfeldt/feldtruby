@@ -492,11 +492,11 @@ describe "Can handle objectives that return nil" do
     q1 = o.quality_of([1])
     q1.sub_qualities.must_equal [1]
     q1.value.must_equal 0.0 # Perfect score
-    q1.to_s.must_equal "0.0 (SubQs = [1.0], ver. 2)"
+    q1.to_s.must_equal "0.0% (SubQs = [1.0], ver. 2)"
 
     q2 = o.quality_of([])
     q2.sub_qualities.must_equal [nil]
     q2.value.must_equal 1000.0 # Max penalty
-    q2.to_s.must_equal "1000.0 (SubQs = [nil], ver. 2)"
+    q2.to_s.must_equal "N/A (SubQs = [nil], ver. 2)"
   end
 end

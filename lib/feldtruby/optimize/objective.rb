@@ -214,7 +214,7 @@ class Objective
   private
 
   def update_quality_value_of(candidate, subQualities, weights)
-    qv = QualityValue.new subQualities, candidate, self
+    qv = @aggregator.make_quality_value subQualities, candidate, self
     update_quality_value_in_object candidate, qv
   end
 
@@ -328,6 +328,10 @@ end
 class Objective::QualityAggregator
   attr_reader :objective
 
+  def make_quality_value(subQvs, candidate, objective)
+    QualityValue.new subQvs, candidate, objective
+  end
+
   # Set the objective to use.
   def objective=(objective)
     # Calculate the signs to be used in inverting the max methods later.
@@ -366,6 +370,10 @@ end
 # their peers; the aggregate fitness value is fully determined by the individual
 # and the global min and max values for each objective.
 class Objective::MeanWeigthedGlobalRatios < Objective::WeightedSumAggregator
+  def make_quality_value(subQvs, candidate, objective)
+    PercentageQualityValue.new subQvs, candidate, objective
+  end
+
   def ratio(index, value, min, max)
     return 1000.0 if value == nil # We heavily penalize if one sub-quality could not be calculated. Max is otherwise 1.0.
     if objective.is_min_goal?(index)
@@ -458,13 +466,25 @@ class QualityValue
     -(@sub_qualities[index])
   end
 
+  def value_to_s
+    "#{value.to_significant_digits(4)}"
+  end
+
   def to_s
     subqs = sub_qualities.map {|f| f ? f.to_significant_digits(3) : nil}
     # Note! We ask for the value first which guarantees that we then have a version number.
-    qstr = "#{value.to_significant_digits(4)}"
+    qstr = value_to_s
     "#{qstr} (SubQs = #{subqs.inspect}, ver. #{@version})"
   end
 end
+
+class PercentageQualityValue < QualityValue
+  def value_to_s
+    return "N/A" if @sub_qualities.any? {|sq| sq.nil?}
+    "%s%%" % (value * 100.0).to_significant_digits(6).to_s
+  end
+end
+
 
 # Short hand for when the objective function is given as a block that should be minimized.
 class ObjectiveMinimizeBlock < Objective
