@@ -169,7 +169,7 @@ end
 class MinEggHolder < Min2DSingleObjectiveFunc
   def minimum
     # -959.6407
-    -963.5808501270542
+    -963.5808501270571
   end
 
   def min_solutions

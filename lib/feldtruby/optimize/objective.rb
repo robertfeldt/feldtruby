@@ -294,9 +294,6 @@ class Objective
         :type_of_improvement => typeOfReset
         }, "Better candidate found for goal #{goal_methods[index]}"
 
-      # Reset the best object since we have a new scale
-      @best_candidate = nil
-
     end
 
     inc_version_number

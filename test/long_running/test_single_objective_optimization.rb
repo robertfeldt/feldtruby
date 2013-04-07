@@ -19,10 +19,15 @@ module MiniTest::Expectations
   infect_an_assertion :assert_close_to_one_solution, :must_be_close_to_one_solution_of
 end
 
-def best_from_de_on_objective(objective, dimensions, numSteps = 25_000, verbose = false)
+# Note! We have set the numSteps below so that DEOptimizer_Rand_1_Bin can converge
+# to a solution. However, for most of these optimization problems 
+# DEOptimizer_Best_1_Bin converges much faster, and can thus be used.
+
+def best_from_de_on_objective(objective, dimensions, numSteps = 25_000, 
+  verbose = false, optimizer = FeldtRuby::Optimize::DEOptimizer_Rand_1_Bin)
   objective.dimensions = dimensions if objective.respond_to?(:dimensions=)
   ss = objective.search_space
-  de = DEOptimizer.new(objective, ss, {:verbose => verbose, 
+  de = optimizer.new(objective, ss, {:verbose => verbose, 
     :maxNumSteps => numSteps})
 
   start_time = Time.now
@@ -74,34 +79,17 @@ end
 
 describe "Easom function" do
   it 'can optimize the Easom function' do
-    objective = MinEasom.new
-    ss = objective.search_space
-    de = DEOptimizer.new(objective, ss, {:verbose => false, 
-      :maxNumSteps => 30_000, :printFrequency => 0.0, 
-      :samplerRadius => 5})
-    best = de.optimize().to_a
-
-    val = objective.calc_func(best)
-    val.must_be_close_to objective.minimum
-    val.must_be :>=, objective.minimum
-
-    best.must_be_close_to_one_solution_of objective, 0.01
+    best, obj, time = best_from_de_on_objective MinBeale.new, nil, 10_000, false, FeldtRuby::Optimize::DEOptimizer_Best_1_Bin
+    best.must_be_close_to_one_solution_of obj
+    time.must_be :<, 1.5
   end
 end
 
 describe "EggHolder function" do
   it 'can optimize the Eggholder function' do
-    objective = MinEggHolder.new
-    ss = objective.search_space
-    de = DEOptimizer.new(objective, ss, {:verbose => false, 
-      :maxNumSteps => 25_000, :samplerRadius => 6})
-    best = de.optimize().to_a
-
-    val = objective.calc_func(best)
-    val.must_be_close_to objective.minimum
-    val.must_be :>=, objective.minimum
-
-    best.must_be_close_to_one_solution_of objective, 0.01
+    best, obj, time = best_from_de_on_objective MinEggHolder.new, nil, 10_000, false, FeldtRuby::Optimize::DEOptimizer_Best_1_Bin
+    best.must_be_close_to_one_solution_of obj
+    time.must_be :<, 1.5
   end
 end
 

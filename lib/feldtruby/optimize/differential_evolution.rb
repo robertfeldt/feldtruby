@@ -67,7 +67,7 @@ class DEOptimizerBase < EvolutionaryOptimizer
 				"Trial Quality" => @objective.quality_of(trial),
 				"Target" => target, 
 				"Target Quality" => @objective.quality_of(target)
-				}, "DE (step #{@num_optimization_steps}): Trial vector was better than target vector", true
+				}, "DE (step #{@num_optimization_steps}): Trial vector was better than target vector"
 			update_candidate_in_population(target_index, trial)
 			feedback_on_trial_vs_target(trial, target, true)
 		else
@@ -142,48 +142,57 @@ module DE_CrossoverStrategy_Binomial
 	end
 end
 
-# Building block for mutation strategies.
-module DE_X_1_StrategyBuildingBlock
-	# We need 0 target parents and 2 other parents. Note that we must sample a target parent
-	# also even though it is not used in the mutation.
-	def num_parents_to_sample; 3; end
-
-	def difference_vector(donorParentsIndices)
-		p1, p2 = get_candidates_with_indices(donorParentsIndices)
-		(p1 - p2)
-	end
-end
-
-module DE_Rand_X_StrategyBuildingBlock
-	def mutate(targetIndex, donorParentsIndices)
-		p3 = get_candidate(donorParentsIndices[-1])
-		p3 + scale_factor(targetIndex) * difference_vector(donorParentsIndices[0...-1])
-	end
-end
-
-# The most-used DE/rand/1 mutation strategy.
+# The most-used DE/rand/1/* mutation strategy.
 module DE_MutationStrategy_Rand_1
-	include DE_X_1_StrategyBuildingBlock
-
-	# We need one more parent in the Rand strategy than in the others, but
-	# we can reuse the difference vector generation. So partial reuse here
-	# NOTE! Order of inclusion is critical!!!
+	# We need three parents for donor vector. And then the target, so 1+3 in total.
 	def num_parents_to_sample; 4; end
 
-	include DE_Rand_X_StrategyBuildingBlock
+	def mutate(targetIndex, donorParentsIndices)
+		p1, p2, p3 = get_candidates_with_indices(donorParentsIndices)
+		p3 + (scale_factor(targetIndex) * (p1 - p2))
+	end
 end
 
-# The default DEOptimizer uses 
-#   Bounding  = random bouding within the search space
+# DE/rand/1/bin uses 
+#   Bounding  = random bounding within the search space
 #   Update 	  = no updates based on feedback
 #   Crossover = Classic binomial
 #   Mutation  = Rand-1
-class DEOptimizer < DEOptimizerBase
+class DEOptimizer_Rand_1_Bin < DEOptimizerBase
 	include DE_BoundingStrategy_RandomWithinSearchSpace
 	include DE_UpdateStrategy_NoFeedbackUpdates
 	include DE_CrossoverStrategy_Binomial
 	include DE_MutationStrategy_Rand_1
 end
+
+# The DE/best/1/* mutation strategy.
+module DE_MutationStrategy_Best_1
+	# We need two parents for donor vector. And then the target, so 1+2 in total.
+	def num_parents_to_sample; 3; end
+
+	def mutate(targetIndex, donorParentsIndices)
+		p1, p2 = get_candidates_with_indices(donorParentsIndices)
+		candidate_from_array(best) + (scale_factor(targetIndex) * (p1 - p2))
+	end
+end
+
+# DE/best/1/bin uses
+#   Bounding  = random bounding within the search space
+#   Update 	  = no updates based on feedback
+#   Crossover = Classic binomial
+#   Mutation  = Best-1
+class DEOptimizer_Best_1_Bin < DEOptimizerBase
+	include DE_BoundingStrategy_RandomWithinSearchSpace
+	include DE_UpdateStrategy_NoFeedbackUpdates
+	include DE_CrossoverStrategy_Binomial
+	include DE_MutationStrategy_Best_1
+end
+
+# DE/rand/1/bin is the default DE optimizer since it does not converge too
+# quickly but is generally good. For many problems the DEOptimizer_Best_1_Bin
+# gives better results faster though.
+DEOptimizer = DEOptimizer_Rand_1_Bin
+#DEOptimizer = DEOptimizer_Best_1_Bin
 
 # Optimize the _numVariables_ between the _min_ and _max_ values given _costFunction_.
 # Default is to minimize.
