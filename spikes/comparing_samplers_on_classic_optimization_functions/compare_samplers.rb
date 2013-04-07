@@ -32,22 +32,6 @@ SamplerRadiuses = SamplerRadiuses1
 
 NumRepetitionsPerSampler = 5
 
-# Schwefel 2.22 function as stated in the JADE paper:
-#  http://150.214.190.154/EAMHCO/pdf/JADE.pdf
-class MinSchwefel2_22 < MinFunctionOfDimension
-  def objective_min_func(x)
-    t1 = x.inject(0.0) do |sum, xi|
-      sum + xi.abs
-    end
-
-    t2 = x.inject(0.0) do |mult, xi|
-      mult * xi.abs
-    end
-
-    t1 + t2
-  end
-end
-
 # Schwefel 1.2 function as stated in the JADE paper:
 #  http://150.214.190.154/EAMHCO/pdf/JADE.pdf
 class MinSchwefel1_2 < MinFunctionOfDimension

@@ -44,12 +44,14 @@ describe "Sphere function" do
   end
 
   it 'can optimize the Sphere function in 10 dimensions' do
-    best, obj = best_from_de_on_objective MinSphere.new, 10, 60_000
+    best, obj, time = best_from_de_on_objective MinSphere.new, 10, 60_000
     best.must_be_close_to_one_solution_of obj
+    time.must_be :<, 7.5
   end
 
   it 'can optimize the Sphere function in 30 dimensions' do
-    best, obj = best_from_de_on_objective MinSphere.new, 30, 220_000
+    best, obj, time = best_from_de_on_objective MinSphere.new, 30, 220_000
+    time.must_be :<, 28.0
     # We don't test closeness since it might take very long for 30D to get close on all dimensions.
   end
 end
@@ -76,7 +78,7 @@ describe "Easom function" do
     ss = objective.search_space
     # Why can't we do this in 25_000 evals anymore? We did it before. Repeatedly. Very strange.
     de = DEOptimizer.new(objective, ss, {:verbose => false, 
-      :maxNumSteps => 35_000, :printFrequency => 0.0, 
+      :maxNumSteps => 40_000, :printFrequency => 0.0, 
       :samplerRadius => 5})
     best = de.optimize().to_a
 
