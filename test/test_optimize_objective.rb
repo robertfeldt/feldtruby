@@ -478,3 +478,23 @@ describe "Using MWGR for range-independent aggregate fitness calc" do
     @o.rank_candidates([i2,i3]).must_equal [i2,i3]
   end
 end
+
+class ObjectiveReturningNil < FeldtRuby::Optimize::Objective
+  def objective_min_sum(ary)
+    return nil if ary.length < 1
+    ary.sum
+  end
+end
+
+describe "Can handle objectives that return nil" do
+  it 'works' do
+    o = ObjectiveReturningNil.new
+    q1 = o.quality_of([1])
+    q1.sub_qualities.must_equal [1]
+    q1.value.must_equal 0.0 # Perfect score
+
+    q2 = o.quality_of([])
+    q2.sub_qualities.must_equal [nil]
+    q2.value.must_equal 1000.0 # Max penalty
+  end
+end

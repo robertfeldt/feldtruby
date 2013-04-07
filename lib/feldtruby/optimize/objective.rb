@@ -261,6 +261,8 @@ class Objective
     min = @global_min_values_per_goal[index]
     max = @global_max_values_per_goal[index]
 
+    return unless qValue
+    
     if qValue < min
 
       @global_min_values_per_goal[index] = qValue
