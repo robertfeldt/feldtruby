@@ -9,7 +9,7 @@ module FeldtRuby
 class Logger
   DefaultParams = {
     :verbose => false,
-    :printFrequency => 0.0  # Minimum seconds between consecutive messages printed for the same event type
+    :printFrequency => 0.4  # Minimum seconds between consecutive messages printed for the same event type
   }
 
   UnixEpoch = Time.at(0)

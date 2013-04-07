@@ -67,7 +67,7 @@ class DEOptimizerBase < EvolutionaryOptimizer
 				"Trial Quality" => @objective.quality_of(trial),
 				"Target" => target, 
 				"Target Quality" => @objective.quality_of(target)
-				}, "DE (step #{@num_optimization_steps}): Trial vector was better than target vector"
+				}, "DE (step #{@num_optimization_steps}): Trial vector was better than target vector", true
 			update_candidate_in_population(target_index, trial)
 			feedback_on_trial_vs_target(trial, target, true)
 		else
