@@ -449,16 +449,32 @@ describe "Using MWGR for range-independent aggregate fitness calc" do
   end
 
   it 'works for a simple scenario' do
-    q1 = @o.quality_of([1,2]) # [1, 3] => 0.0
+    i1 = [1,2]
+    q1 = @o.quality_of(i1) # [1, 3] => 0.0
     q1.value.must_equal 0.0 # First eval must give perfect score since scales are tight...
 
-    q2 = @o.quality_of([1,3]) # [2, 4] => 0.5
+    i2 = [1,3]
+    q2 = @o.quality_of(i2) # [2, 4] => 0.5
     q2.value.must_equal 0.5 # Perfect on one (max sum) and worst on other (min distance) so (0+1.0)/2
     q1.value.must_equal 0.5 # Perfect on one (min distance) and worst on other (max sum) so (1.0+0.0)/2
 
-    q3 = @o.quality_of([1,4]) # [3, 5] => (0+1.0)/2
+    i3 = [1,4]
+    q3 = @o.quality_of(i3) # [3, 5] => (0+1.0)/2
     q3.value.must_equal 0.5 # Perfect on one (max sum) and worst on other (min distance) so (0+1.0)/2
     q2.value.must_equal( ((2.0-1.0)/(3.0-1.0) + ((5.0-4.0)/(5.0-3.0)))/2.0 )
     q1.value.must_equal( ((1.0-1.0)/(3.0-1.0) + ((5.0-3.0)/(5.0-3.0)))/2.0 )
+
+    i4 = [1,2,3]
+    q4 = @o.quality_of(i4) # [2, 6]
+    q4.value.must_equal( ((2.0-1.0)/(3.0-1.0) + ((6.0-6.0)/(6.0-3.0)))/2.0 )
+    q3.value.must_equal( ((3.0-1.0)/(3.0-1.0) + ((6.0-5.0)/(6.0-3.0)))/2.0 )
+    q2.value.must_equal( ((2.0-1.0)/(3.0-1.0) + ((6.0-4.0)/(6.0-3.0)))/2.0 )
+    q1.value.must_equal( ((1.0-1.0)/(3.0-1.0) + ((6.0-3.0)/(6.0-3.0)))/2.0 )
+
+    @o.rank_candidates([i1,i3,i4]).must_equal [i4,i1,i3]
+    @o.rank_candidates([i3,i4,i2]).must_equal [i4,i2,i3]
+    @o.rank_candidates([i3,i4]).must_equal [i4,i3]
+    @o.rank_candidates([i3,i1]).must_equal [i1,i3]
+    @o.rank_candidates([i2,i3]).must_equal [i2,i3]
   end
 end
