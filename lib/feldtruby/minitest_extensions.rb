@@ -1,6 +1,7 @@
 require 'minitest/unit'
 require 'minitest/spec'
 require 'feldtruby/statistics'
+require 'feldtruby/array'
 
 module MiniTest::Assertions
   # Ensure that that are (statistically) the same number of each type
