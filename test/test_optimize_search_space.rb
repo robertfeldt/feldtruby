@@ -50,6 +50,41 @@ describe "SearchSpace#bound" do
 	end
 end
 
+describe "SearchSpace#bound_at_index" do
+	before do
+		@sp = FeldtRuby::Optimize::SearchSpace.new([-5, -3], [5, 7])
+	end
+
+	it "returns the values if they are INSIDE the search space boundaries" do
+		@sp.bound_at_index(0, [-1, 0]).must_equal [-1, 0]
+		@sp.bound_at_index(1, [-1, 0]).must_equal [-1, 0]
+	end
+
+	it "returns the values if they are ON the search space boundaries" do
+		@sp.bound_at_index(0, [-5, -3]).must_equal [-5, -3]
+		@sp.bound_at_index(1, [-5, -3]).must_equal [-5, -3]
+		@sp.bound_at_index(0, [ 5,  7]).must_equal [ 5,  7]
+		@sp.bound_at_index(1, [ 5,  7]).must_equal [ 5,  7]
+	end
+
+	it "generates a value INSIDE the search space boundaries when a value is given that is outside (negative, outside on one dimension)" do
+		l, h = @sp.bound_at_index(0, [-10, 3.4])
+		h.must_equal 3.4
+		l.must_be :>=, -5
+		l.must_be :<=,  5
+
+		l, h = @sp.bound_at_index(1, [-4.6, -4.1])
+		l.must_equal(-4.6)
+		h.must_be :>=, -3
+		h.must_be :<=,  7
+	end
+
+  it "does not touch a value outside the boundaries if it is not at the index" do
+		@sp.bound_at_index(1, [-10, 3.4]).must_equal [-10, 3.4]
+		@sp.bound_at_index(0, [-4.6, -4.1]).must_equal [-4.6, -4.1]
+  end  
+end
+
 describe "LatinHypercubeSampler" do
 	before do
 		@sampler = FeldtRuby::Optimize::SearchSpace::LatinHypercubeSampler.new

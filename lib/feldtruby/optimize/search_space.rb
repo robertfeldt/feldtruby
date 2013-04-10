@@ -41,6 +41,14 @@ class SearchSpace
 		candidate.class.send(:[], *a)
 	end
 
+	# Bound variable at _index_ in _candidate_.
+	def bound_at_index(index, candidate)
+		unless in_range_for_position?(candidate[index], index)
+			candidate[index] = gen_value_for_position(index)
+		end
+		candidate
+	end
+
 	def in_range_for_position?(value, index)
 		(value >= @min_values[index]) && (value <= @max_values[index])
 	end
