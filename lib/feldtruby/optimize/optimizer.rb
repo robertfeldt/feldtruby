@@ -209,7 +209,7 @@ end
 DefaultOptimizationOptions = {
 	:terminationCriterionClass => FeldtRuby::Optimize::MaxStepsTerminationCriterion,
 	:verbose => true,
-	:populationSize => 200,
+	:populationSize => 100,
 	:samplerClass => FeldtRuby::Optimize::RadiusLimitedPopulationSampler,
 	:samplerRadius => 8 # Max distance between individuals selected in same tournament.
 }
