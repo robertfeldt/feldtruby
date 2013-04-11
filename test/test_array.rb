@@ -107,6 +107,37 @@ describe "Array extensions" do
 		end
 	end
 
+	describe "counts_within_ratio_of" do
+		it "returns empty hash for empty array" do
+			[].counts_within_ratio_of(10).must_equal({})
+		end
+
+		it "counts right for arrays of only one number, when target is that number" do
+			[1].counts_within_ratio_of(1).must_equal({1 => 1})
+			[2, 2].counts_within_ratio_of(2).must_equal({2 => 2})
+			[4, 4, 4].counts_within_ratio_of(4).must_equal({4 => 3})
+		end
+
+		it "counts right for arrays of only one number, when target is far from that number" do
+			[1].counts_within_ratio_of(1000).must_equal({})
+			[2, 2].counts_within_ratio_of(1000).must_equal({})
+			[4, 4, 4].counts_within_ratio_of(1000).must_equal({})
+		end
+
+		it "counts right for arrays of many numbers, when target range includes them all" do
+			[97, 98, 97, 99, 100, 100, 101, 102, 103, 102].counts_within_ratio_of(100, 0.05).must_equal({
+				97=>2, 98=>1, 99=>1, 100 => 2, 101=>1, 102 => 2, 103 => 1})
+		end
+
+		it "counts right for arrays of many numbers, when target range includes some of them" do
+			[97, 98, 97, 99, 100, 100, 101, 102, 103, 102, 1000, -20].counts_within_ratio_of(100, 0.01).must_equal({
+				99=>1, 100 => 2, 101=>1})
+
+			[97, 98, 97, 99, 100, 100, 101, 102, 103, 102, 1000, -20].counts_within_ratio_of(100, 0.02).must_equal({
+				98=>1, 99=>1, 100 => 2, 101=>1, 102 => 2})
+		end
+	end
+
 	describe "sample" do
 		it "only samples within the array" do
 			d = (1..100).to_a

@@ -50,6 +50,21 @@ class Array
 		count_hash
 	end
 
+	# Count the values that are within +/-(epsilon*targetValue) of a targetValue
+	# and return the counts as an array. Will skip elements of the array that are
+	# not Numeric.
+	def counts_within_ratio_of(targetValue, epsilon = 0.10)
+		min = targetValue * (1.0 - epsilon)
+		max = targetValue * (1.0 + epsilon)
+		count_hash = Hash.new(0)
+		self.each do |element| 
+			if Numeric === element && element >= min && element <= max
+				count_hash[element] += 1
+			end
+		end
+		count_hash
+	end
+
 	def sample
 		self[rand(self.length)]
 	end
