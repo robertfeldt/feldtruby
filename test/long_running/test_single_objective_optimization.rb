@@ -36,7 +36,7 @@ def best_from_de_on_objective(objective, dimensions, numSteps = 25_000,
 
   val = objective.calc_func(best)
   val.must_be_close_to objective.minimum
-  val.must_be :>, objective.minimum
+  val.must_be :>=, objective.minimum
 
   return best, objective, elapsed
 end
@@ -79,7 +79,7 @@ end
 
 describe "Easom function" do
   it 'can optimize the Easom function' do
-    best, obj, time = best_from_de_on_objective MinBeale.new, nil, 10_000, false, FeldtRuby::Optimize::DEOptimizer_Best_1_Bin
+    best, obj, time = best_from_de_on_objective MinEasom.new, nil, 10_000, false, FeldtRuby::Optimize::DEOptimizer_Best_1_Bin
     best.must_be_close_to_one_solution_of obj
     time.must_be :<, 1.5
   end
