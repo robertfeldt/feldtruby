@@ -55,7 +55,41 @@ task :clean do
   FileUtils.rm_rf "pkg"
 end
 
+def profile_script(script, args = [])
+  ts = Time.now.strftime("%y%m%d_%H%M%S")
+  scriptname = File.basename(script)
+  profile = "./profiling/#{scriptname}_profile_#{ts}"
+
+  template = <<-EOS
+    require 'perftools'
+
+    PerfTools::CpuProfiler.start("PROFILENAME")
+    require "SCRIPT"
+    PerfTools::CpuProfiler.stop
+  EOS
+  profiling_script = template.gsub("PROFILENAME", profile).gsub("SCRIPT", script)
+  puts profiling_script
+  filename = "profiling/profiling_script.rb"
+  File.open(filename, "w") {|fh| fh.puts profiling_script}
+  psys "ruby #{filename} #{args.join(' ')}"
+  psys "pprof.rb --text #{profile} > #{profile}.txt"
+  psys "pprof.rb --pdf #{profile} > #{profile}.pdf"
+  File.delete(filename)
+end
+
+desc "Profile"
+task :profile do
+  unless require("perftools")
+    puts "CANNOT profile since perftools.rb is NOT INSTALLED."
+    exit -1
+  end
+  profile_script "./spikes/simple_de_run.rb", ["100_000"]
+  profile_script "./spikes/long_running_search.rb"
+end
+
 desc "Clean the repo of any files that should not be checked in"
-task :clobber => [:clean]
+task :clobber => [:clean] do
+  system "rm -rf profiling/*"
+end
 
 task :default => :test
