@@ -481,7 +481,7 @@ end
 class PercentageQualityValue < QualityValue
   def value_to_s
     return "N/A" if @sub_qualities.any? {|sq| sq.nil?}
-    "%s%%" % (value * 100.0).to_significant_digits(6).to_s
+    "%s%%" % ((1.0 - value) * 100.0).to_significant_digits(6).to_s
   end
 end
 

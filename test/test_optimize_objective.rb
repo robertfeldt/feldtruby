@@ -477,6 +477,30 @@ describe "Using MWGR for range-independent aggregate fitness calc" do
     @o.rank_candidates([i3,i1]).must_equal [i1,i3]
     @o.rank_candidates([i2,i3]).must_equal [i2,i3]
   end
+
+  it "prints the quality inverted in 100.0 to make it more human-understandable" do
+    i1 = [1,2]
+    q1 = @o.quality_of(i1) # [1, 3] => 0.0
+    q1.to_s.must_equal "100.0% (SubQs = [1.0, 3.0], ver. 4)"
+
+    i2 = [1,3]
+    q2 = @o.quality_of(i2) # [2, 4] => 0.5
+    q2.to_s.must_equal "50.0% (SubQs = [2.0, 4.0], ver. 6)"
+    q1.to_s.must_equal "50.0% (SubQs = [1.0, 3.0], ver. 6)"
+
+    i3 = [1,4]
+    q3 = @o.quality_of(i3) # [3, 5] => (0+1.0)/2
+    q3.to_s.must_equal "50.0% (SubQs = [3.0, 5.0], ver. 8)"
+    q2.to_s.must_equal "50.0% (SubQs = [2.0, 4.0], ver. 8)"
+    q1.to_s.must_equal "50.0% (SubQs = [1.0, 3.0], ver. 8)"
+
+    i4 = [1,2,3]
+    q4 = @o.quality_of(i4) # [2, 6] => (0.5+1.0)/2
+    q4.to_s.must_equal "75.0% (SubQs = [2.0, 6.0], ver. 9)"
+    q3.to_s.must_equal "33.3333% (SubQs = [3.0, 5.0], ver. 9)"
+    q2.to_s.must_equal "41.6667% (SubQs = [2.0, 4.0], ver. 9)"
+    q1.to_s.must_equal "50.0% (SubQs = [1.0, 3.0], ver. 9)"
+  end
 end
 
 class ObjectiveReturningNil < FeldtRuby::Optimize::Objective
@@ -492,7 +516,7 @@ describe "Can handle objectives that return nil" do
     q1 = o.quality_of([1])
     q1.sub_qualities.must_equal [1]
     q1.value.must_equal 0.0 # Perfect score
-    q1.to_s.must_equal "0.0% (SubQs = [1.0], ver. 2)"
+    q1.to_s.must_equal "100.0% (SubQs = [1.0], ver. 2)"
 
     q2 = o.quality_of([])
     q2.sub_qualities.must_equal [nil]

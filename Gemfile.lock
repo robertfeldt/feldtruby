@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    feldtruby (0.4.7)
+    feldtruby (0.4.8)
       bson_ext
       json
       mongo
