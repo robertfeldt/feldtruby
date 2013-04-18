@@ -39,7 +39,7 @@ module FeldtRuby::Optimize
 #  specialists    (doing one thing very, very good, sub-objective fitness best)
 #  weirdos        (different but with clear qualitites, ok but diverse)
 class Archive
-  #include FeldtRuby::Logging
+  include FeldtRuby::Logging
 
   DefaultParams = {
     :NumTopPerGoal => 5, # Number of solutions in top list per individual goal
@@ -68,6 +68,7 @@ class Archive
     self.diversity_objective = diversityObjective
     @params = DefaultParams.clone.update(params)
     init_top_lists
+    setup_logger_and_distribute_to_instance_variables(@params)
   end
 
   def diversity_objective=(diversityObjective)
@@ -105,12 +106,12 @@ class Archive
     # they are relative and must be recalculated. Note that this might incur
     # a big penalty if there are frequent changes at the top.
     if prev_best != best
-#      logger.log_data :new_best, {
-#        "New best" => best,
-#        "New quality" => @objective.quality_of(best),
-#        "Old best" => prev_best,
-#        "Old quality" => @objective.quality_of(prev_best)}, 
-#        "Archive: New best solution found", true
+      prev_qv = prev_best.nil? ? "" : @objective.quality_of(prev_best)
+      logger.log_data :new_best, {
+        "New best" => best,
+        "New quality" => @objective.quality_of(best),
+        "Old best" => prev_best,
+        "Old quality" => prev_qv}, "Archive: New best solution found", true
 
       @weirdos.each {|w| @diversity_objective.invalidate_quality_of(w)}
     elsif good_enough_quality_to_be_interesting?(candidate)
@@ -147,13 +148,11 @@ class Archive
 
     def add(candidate)
       last = @top_list.last
-      #puts "In #{self},\nlast = #{last}, candidate = #{candidate}, top_list = #{@top_list}"
       if @top_list.length < @max_size || last.nil? || is_better_than?(candidate, last)
         @top_list.pop if @top_list.length >= @max_size
         @top_list << candidate
         @top_list = sort_top_list
       end
-      #puts "top_list = #{@top_list}"
     end
 
     def is_better_than?(candidate1, candidate2)

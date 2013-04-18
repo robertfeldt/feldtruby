@@ -175,7 +175,7 @@ end
 module Logging
   attr_accessor :logger
 
-  def setup_logger_and_distribute_to_instance_variables(loggerOrOptions = nil)
+  def setup_logger_and_distribute_to_instance_variables(loggerOrOptions = nil, visited = [])
 
     if Hash === loggerOrOptions
       options = loggerOrOptions
@@ -194,12 +194,19 @@ module Logging
       new_default_logger(options)
 
     # Now distribute the preferred logger to all instance vars, recursively.
+    # Save all visited ones to a list though and check that we do not get into
+    # infinite regress if two objects refer to each other.
     self.instance_variables.each do |ivar_name|
 
       ivar = self.instance_variable_get ivar_name
 
-      if ivar.respond_to?(:setup_logger_and_distribute_to_instance_variables)
-        ivar.setup_logger_and_distribute_to_instance_variables self.logger 
+      unless visited.include?(ivar)
+
+        visited << ivar
+
+        if ivar.respond_to?(:setup_logger_and_distribute_to_instance_variables)
+          ivar.setup_logger_and_distribute_to_instance_variables self.logger, visited
+        end
       end
 
     end
