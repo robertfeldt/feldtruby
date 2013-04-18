@@ -163,6 +163,13 @@ class Objective
 
   end
 
+  # Invalidate the current quality object to ensure it will be recalculated
+  # the next time quality_of is called with this candidate. This is needed
+  # when there is a new best candidate set in an Archive, for example.
+  def invalidate_quality_of(candidate)
+    update_quality_value_in_object candidate, nil
+  end
+
   # Rank candidates from best to worst. Candidates that have the same quality
   # are randomly ordered.
   def rank_candidates(candidates, weights = self.weights)
@@ -507,6 +514,23 @@ class ObjectiveMaximizeBlock < Objective
 
   def objective_max_cost_function(candidate)
     @objective_function.call(*candidate.to_a)
+  end
+end
+
+# A diversity objective often is a secondary goal and is measured relative
+# to quality goals/objectives or relative to candidates in the archive.
+# Thus it needs to have access to these other two objects.
+class DiversityObjective < Objective
+  attr_accessor :archive
+  attr_accessor :quality_objective
+end
+
+# The standard diversity objective is to just use the Euclidean distance
+# to the best candidate found so far.
+class FeldtRuby::Optimize::EuclideanDistanceToBest < FeldtRuby::Optimize::DiversityObjective
+  # Euclidean distance to best candidate. Genotype diversity.
+  def goal_max_euclidean_distance_to_best(candidate)
+    candidate.rms_from(archive.best)
   end
 end
 

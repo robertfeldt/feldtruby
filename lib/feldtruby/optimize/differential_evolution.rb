@@ -70,11 +70,11 @@ class DEOptimizerBase < EvolutionaryOptimizer
 				}, "DE (step #{@num_optimization_steps}): Trial vector was better than target vector"
 			update_candidate_in_population(target_index, trial)
 			feedback_on_trial_vs_target(trial, target, true)
+			[best]
 		else
 			feedback_on_trial_vs_target(trial, target, false)
+			[]
 		end
-
-		[best]
 	end
 
 	#####################################

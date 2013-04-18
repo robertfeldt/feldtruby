@@ -2,6 +2,7 @@ require 'feldtruby/optimize'
 require 'feldtruby/optimize/objective'
 require 'feldtruby/optimize/search_space'
 require 'feldtruby/optimize/max_steps_termination_criterion'
+require 'feldtruby/optimize/archive'
 require 'feldtruby/math/rand'
 require 'feldtruby/array'
 require 'feldtruby/logger'
@@ -13,19 +14,42 @@ module FeldtRuby::Optimize
 class Optimizer
 	include FeldtRuby::Logging
 
-	attr_reader :options, :objective, :search_space, :best, :best_quality_value
-	attr_reader :best_sub_quality_values, :num_optimization_steps, :termination_criterion
+	attr_reader :options, :objective, :search_space, :archive
+	attr_reader :num_optimization_steps, :termination_criterion
 
 	def initialize(objective, searchSpace = FeldtRuby::Optimize::DefaultSearchSpace, options = {})
-		@best = nil # To avoid warnings if not set
 		@objective, @search_space = objective, searchSpace
 		@options = FeldtRuby::Optimize.override_default_options_with(options)
+
+		init_archive
 
 		# Must setup logger before setting options since verbosity of logger is
 		# an option!
 		setup_logger_and_distribute_to_instance_variables(options)
 
 		initialize_options(@options)
+	end
+
+	def init_archive
+		if @options[:archive]
+
+			@archive = @options[:archive]
+
+		else
+
+			if @options[:archiveDiversityObjective]
+				diversity_objective = @options[:archiveDiversityObjective]
+			else
+				diversity_objective = @options[:archiveDiversityObjectiveClass].new
+			end
+		
+			@archive = @options[:archiveClass].new(@objective, diversity_objective)
+
+		end
+	end
+
+	def best
+		@archive.best
 	end
 
 	def initialize_options(options)
@@ -37,15 +61,18 @@ class Optimizer
 	def optimize()
 		logger.log "Optimization with optimizer #{self.class.inspect} started"
 		@num_optimization_steps = 0
-		# Set up a random best since other methods require it
-		update_best([search_space.gen_candidate()])
+
+		# Set up a random best for now that we can later compare to.
+		update_archive [search_space.gen_candidate()]
+
 		begin
 			while !termination_criterion.terminate?(self)
 				new_candidates = optimization_step()
 				@num_optimization_steps += 1
-				update_best(new_candidates)
+				update_archive new_candidates
 			end
 		rescue Exception => e
+			puts e.inspect
 			logger.log_data :exception, {
 				:exception_class => e.class.inspect, 
 				:backtrace => e.backtrace.join("\n")
@@ -53,16 +80,18 @@ class Optimizer
 		ensure
 			logger.log "!!! - Optimization FINISHED after #{@num_optimization_steps} steps - !!!"
 		end
+
 		@objective.note_end_of_optimization(self)
 		log_end_of_optimization
-		@best # return the best
+
+		archive.best # return the best
 	end
 
 	def log_end_of_optimization
 		logger.log("End of optimization\n" + 
 			"  Optimizer: #{self.class}\n" +
-			"  Best found: #{@best}\n" +
-			"  Quality of best: #{@objective.quality_of(@best)}\n" +
+			"  Best found: #{@archive.best}\n" +
+			"  Quality of best: #{@objective.quality_of(@archive.best)}\n" +
 			"  Time used = #{Time.human_readable_timestr(logger.elapsed_time)}, " + 
 			  "Steps performed = #{@num_optimization_steps}, " + 
 			  "#{Time.human_readable_timestr(time_per_step, true)}/step")
@@ -77,21 +106,10 @@ class Optimizer
 	def optimization_step()
 	end
 
-	# Update the best if a new best was found.
-	def update_best(candidates)
-		best_new, rest = objective.rank_candidates(candidates)
-		if @best.nil? || @objective.is_better_than?(best_new, @best)
-			qb = @best.nil? ? nil : @objective.quality_of(@best)
-			logger.log_data :new_best, {
-				"New best" => best_new,
-				"New quality" => @objective.quality_of(best_new), 
-				"Old best" => @best,
-				"Old quality" => qb}, "Optimizer (step #{@num_optimization_steps}): New best solution found", true
-			@best = best_new
-			true
-		else
-			false
-		end
+	# Update the archive with newly found candidates. Array of candidates may be empty if
+	# no new candidates found.
+	def update_archive(candidates)
+		candidates.each {|c| @archive.add(c)}
 	end
 end
 
@@ -211,7 +229,11 @@ DefaultOptimizationOptions = {
 	:verbose => true,
 	:populationSize => 100,
 	:samplerClass => FeldtRuby::Optimize::RadiusLimitedPopulationSampler,
-	:samplerRadius => 8 # Max distance between individuals selected in same tournament.
+	:samplerRadius => 8, # Max distance between individuals selected in same tournament.
+	:archive => nil, # If this is set it takes precedence over archiveClass.
+	:archiveClass => FeldtRuby::Optimize::Archive,
+	:archiveDiversityObjective => nil, # If this is set it takes precedence over the class in archiveDiversityObjectiveClass
+	:archiveDiversityObjectiveClass => FeldtRuby::Optimize::EuclideanDistanceToBest,
 }
 
 def self.override_default_options_with(options)
