@@ -1,5 +1,6 @@
 require 'feldtruby/optimize'
 require 'feldtruby/logger'
+require 'json'
 
 module FeldtRuby::Optimize
 
@@ -56,7 +57,7 @@ class Archive
     # solution (top of Aggregate list) that a solution is allowed to have 
     # to be allowed on the diversity list. If it is more than 5% from best
     # we don't consider adding it to a diversity list.
-    :MaxPercentDistanceToBestForDiversity => 0.05
+    :MaxPercentDistanceToBestForDiversity => 0.10
   }
 
   attr_reader :objective, :diversity_objective
@@ -90,7 +91,7 @@ class Archive
 
     @generalists = GlobalTopList.new(@params[:NumTopAggregate], @objective)
 
-    @weirdos = GlobalTopList.new(@params[:NumTopDiversityAggregate], @diversity_objective)
+    @weirdos = WeirdoTopList.new(@params[:NumTopDiversityAggregate], @diversity_objective, @objective)
   end
 
   # Add a candidate to the top lists if it is good enough to be there. Throws
@@ -113,7 +114,19 @@ class Archive
         "Old best" => prev_best,
         "Old quality" => prev_qv}, "Archive: New best solution found", true
 
-      @weirdos.each {|w| @diversity_objective.invalidate_quality_of(w)}
+      # We must delete weirdos that are no longer good enough to be on the 
+      # weirdos list.
+      to_delete = []
+      @weirdos.each {|w| 
+        # Invalidate quality since it must now be re-calculated (since it will
+        # typically depend on the best and we have a new best...)
+        @diversity_objective.invalidate_quality_of(w)
+
+        to_delete << w unless good_enough_quality_to_be_interesting?(w)
+      }
+      #puts "Deleting #{to_delete.length} out of #{@weirdos.length} weirdos"
+      #@weirdos.delete_candidates(to_delete)
+
     elsif good_enough_quality_to_be_interesting?(candidate)
       # When we add a new one this will lead to re-calc of the diversity quality
       # of the previous ones if there has been a new best since last time.
@@ -130,7 +143,7 @@ class Archive
 
   # A top list is an array of a fixed size that saves the top candidates
   # based on their (aggregate) quality values.
-  class GlobalTopList
+  class GlobalTopList    
     def initialize(maxSize, objective)
       @max_size =maxSize
       @top_list = Array.new
@@ -159,12 +172,48 @@ class Archive
       @objective.is_better_than?(candidate1, candidate2)
     end
 
+    def delete_candidates(candidates)
+      @top_list = @top_list - candidates
+    end
+
     def sort_top_list
       @top_list.sort_by {|c| @objective.quality_of(c).value}
     end
 
     def inspect
       self.class.inspect + @top_list.inspect
+    end
+
+    def to_json(*a)
+      {
+        'json_class'   => self.class.name,
+        'data'         => data_to_json_hash,
+      }.to_json(*a)
+    end
+
+    def data_to_json_hash
+      {
+        'max_size' => @max_size,
+        'top_list' => @top_list,
+        'quality_values' => @top_list.map {|c| @objective.quality_of(c)},
+        'objective' => @objective
+      }
+    end
+  end
+
+  class WeirdoTopList < GlobalTopList
+    def initialize(maxSize, diversityObjective, qualityObjective)
+      super(maxSize, diversityObjective)
+      @quality_objective = qualityObjective
+    end
+
+    def data_to_json_hash
+      h = super()
+      # Since the diversity objective is used to sort the weirdos their
+      # 'quality_values' are actually the diversity quality values.
+      h['diversity_quality_values'] = h['quality_values']
+      h['quality_values'] = @top_list.map {|c| @quality_objective.quality_of(c)}
+      h
     end
   end
 
@@ -182,6 +231,24 @@ class Archive
         qv.sub_quality(@index, true) # We want the sub quality value posed as a minimization goal regardless of whether it is a min or max goal
       }
     end
+
+    # We add additional data about which goal/objective we are a top list for.
+    def data_to_json_hash
+      h = super()
+      h['objective_index'] = @index
+      h['objective_name'] = @objective.goal_methods[@index]
+      h
+    end
+  end
+
+  def to_json(*a)
+    {
+      'json_class'   => self.class.name,
+      'data'         => {
+        'generalists' => @generalists,
+        'specialists' => @specialists,
+        'weirdos' => @weirdos},
+    }.to_json(*a)
   end
 end
 
