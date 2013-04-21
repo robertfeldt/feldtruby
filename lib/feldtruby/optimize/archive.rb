@@ -57,7 +57,7 @@ class Archive
     # solution (top of Aggregate list) that a solution is allowed to have 
     # to be allowed on the diversity list. If it is more than 5% from best
     # we don't consider adding it to a diversity list.
-    :MaxPercentDistanceToBestForDiversity => 0.10
+    :MaxPercentDistanceToBestForDiversity => 0.05
   }
 
   attr_reader :objective, :diversity_objective
@@ -137,8 +137,11 @@ class Archive
   # Is quality of candidate good enough (within MaxPercentDistanceToBestForDiversity
   # from quality of best candidate)
   def good_enough_quality_to_be_interesting?(candidate)
-    qv_best = @objective.quality_of(best).value
-    ((qv_best - @objective.quality_of(candidate).value).abs / qv_best) <= @params[:MaxPercentDistanceToBestForDiversity]
+    qv_best = @objective.quality_of(best).display_value
+    qv = @objective.quality_of(candidate).display_value
+    res = ((qv_best - qv).abs / qv_best) <= @params[:MaxPercentDistanceToBestForDiversity]
+    #puts "qvbest = #{qv_best}, qv = #{qv}, res = #{res}"
+    res
   end
 
   # A top list is an array of a fixed size that saves the top candidates

@@ -473,8 +473,13 @@ class QualityValue
     -(@sub_qualities[index])
   end
 
+  # The value to display. For this default class we just use the quality value.
+  def display_value
+    value
+  end
+
   def value_to_s
-    "#{value.to_significant_digits(4)}"
+    "#{display_value.to_significant_digits(4)}"
   end
 
   def to_s
@@ -486,9 +491,12 @@ class QualityValue
 end
 
 class PercentageQualityValue < QualityValue
+  def display_value
+    (1.0 - value) * 100.0
+  end
   def value_to_s
     return "N/A" if @sub_qualities.any? {|sq| sq.nil?}
-    "%s%%" % ((1.0 - value) * 100.0).to_significant_digits(6).to_s
+    "%s%%" % display_value.to_significant_digits(6).to_s
   end
 end
 

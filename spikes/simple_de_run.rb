@@ -24,4 +24,6 @@ o2 = MinimizeRMSAndSum.new
 
 de = DEOptimizer.new(o2, s4, {:verbose => true, :maxNumSteps => $NumSteps})
 
-de.optimize()
+best = de.optimize()
+
+File.open("archive.json", "w") {|fh| fh.puts(JSON.pretty_generate(de.archive))}

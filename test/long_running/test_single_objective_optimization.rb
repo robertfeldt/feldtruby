@@ -1,5 +1,5 @@
-require File.join(FeldtRubyLongTestDir, "single_objective_problems")
 require 'feldtruby/optimize/differential_evolution'
+require 'feldtruby/optimize/problems/single_objective_problems'
 include FeldtRuby::Optimize
 
 module MiniTest::Assertions
@@ -79,7 +79,7 @@ end
 
 describe "Easom function" do
   it 'can optimize the Easom function' do
-    best, obj, time = best_from_de_on_objective MinEasom.new, nil, 10_000, false, FeldtRuby::Optimize::DEOptimizer_Best_1_Bin
+    best, obj, time = best_from_de_on_objective MinEasom.new, nil, 15_000, false, FeldtRuby::Optimize::DEOptimizer_Best_1_Bin
     best.must_be_close_to_one_solution_of obj
     time.must_be :<, 1.5
   end
