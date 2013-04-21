@@ -28,6 +28,8 @@ class DivObj2 < FeldtRuby::Optimize::EuclideanDistanceToBest
   end
 end
 
+require 'pp'
+
 describe "Archive" do
   before do
     @o = TwoMinOneMax.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new)
@@ -36,6 +38,19 @@ describe "Archive" do
     :NumTopPerGoal => 2,
     :NumTopAggregate => 3,
     :NumTopDiversityAggregate => 2})
+  end
+
+  it 'can dump itself to json' do
+    @a.add [1,2,3]
+    js = @a.to_json
+    js.must_be_kind_of String
+    hash = JSON.parse js
+    hash.must_be_kind_of Hash
+    hash['json_class'].must_equal "FeldtRuby::Optimize::Archive"
+    hash['data'].keys.sort.must_equal ["generalists", "specialists", "weirdos"].sort
+    tl = hash['data']['generalists']['data']['top_list']
+    tl.must_be_kind_of Array
+    tl.length.must_equal 1
   end
 
   it 'is adapted to objectives when created' do

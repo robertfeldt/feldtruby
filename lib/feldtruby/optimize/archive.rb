@@ -1,6 +1,6 @@
 require 'feldtruby/optimize'
 require 'feldtruby/logger'
-require 'json'
+require 'feldtruby/json'
 
 module FeldtRuby::Optimize
 
@@ -41,6 +41,7 @@ module FeldtRuby::Optimize
 #  weirdos        (different but with clear qualitites, ok but diverse)
 class Archive
   include FeldtRuby::Logging
+  include ToJsonImplementedViaDataHash
 
   DefaultParams = {
     :NumTopPerGoal => 5, # Number of solutions in top list per individual goal
@@ -146,7 +147,9 @@ class Archive
 
   # A top list is an array of a fixed size that saves the top candidates
   # based on their (aggregate) quality values.
-  class GlobalTopList    
+  class GlobalTopList
+    include ToJsonImplementedViaDataHash
+   
     def initialize(maxSize, objective)
       @max_size =maxSize
       @top_list = Array.new
@@ -185,13 +188,6 @@ class Archive
 
     def inspect
       self.class.inspect + @top_list.inspect
-    end
-
-    def to_json(*a)
-      {
-        'json_class'   => self.class.name,
-        'data'         => data_to_json_hash,
-      }.to_json(*a)
     end
 
     def data_to_json_hash
@@ -244,14 +240,10 @@ class Archive
     end
   end
 
-  def to_json(*a)
-    {
-      'json_class'   => self.class.name,
-      'data'         => {
-        'generalists' => @generalists,
-        'specialists' => @specialists,
-        'weirdos' => @weirdos},
-    }.to_json(*a)
+  def data_to_json_hash
+    { 'generalists' => @generalists,
+      'specialists' => @specialists,
+      'weirdos'     => @weirdos}
   end
 end
 

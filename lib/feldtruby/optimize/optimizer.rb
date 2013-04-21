@@ -57,16 +57,36 @@ class Optimizer
 		@termination_criterion = options[:terminationCriterion]
 	end
 
-	# Optimize the objective in the given search space. 
-	def optimize()
-		logger.log "Optimization with optimizer #{self.class.inspect} started"
+	# Setup for optimization unless we have already been setup...
+	def setup_for_optimization
+		return if has_been_setup?
+		logger.log "Setting up for optimization with optimizer #{self.class.inspect}"
 		@num_optimization_steps = 0
-
 		# Set up a random best for now that we can later compare to.
 		update_archive [search_space.gen_candidate()]
+		@has_been_setup = true
+	end
 
+	# True iff we have already been setup.
+	def has_been_setup?
+		@has_been_setup
+	end
+
+	# Run the optimizer a given number of steps
+	def optimize_num_steps(numberOfSteps = 1000)
+		setup_for_optimization
+		# We create a criterion specific to this round. It will stop after the given
+		# number of steps.
+		stop_at_steps = @num_optimization_steps + numberOfSteps
+		criterion = FeldtRuby::Optimize::MaxStepsTerminationCriterion.new stop_at_steps
+		logger.log "Optimization for #{numberOfSteps} steps with optimizer #{self.class.inspect} started"
+		optimize_until_termination criterion
+		archive.best # return the best
+	end
+
+	def optimize_until_termination(terminationCriterion = self.termination_criterion)
 		begin
-			while !termination_criterion.terminate?(self)
+			while !terminationCriterion.terminate?(self)
 				new_candidates = optimization_step()
 				@num_optimization_steps += 1
 				update_archive new_candidates
@@ -78,12 +98,17 @@ class Optimizer
 				:backtrace => e.backtrace.join("\n")
 			}, "!!! - Optimization FAILED with exception: #{e.message} - !!!" + e.backtrace.join("\n")
 		ensure
-			logger.log "!!! - Optimization FINISHED after #{@num_optimization_steps} steps - !!!"
+			logger.log "!!! - Optimization ended after #{@num_optimization_steps} steps - !!!"
 		end
+	end
 
+	# Optimize the objective in the given search space. 
+	def optimize()
+		setup_for_optimization
+		logger.log "Optimization with optimizer #{self.class.inspect} started"
+		optimize_until_termination self.termination_criterion
 		@objective.note_end_of_optimization(self)
 		log_end_of_optimization
-
 		archive.best # return the best
 	end
 

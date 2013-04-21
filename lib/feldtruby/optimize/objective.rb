@@ -473,6 +473,14 @@ class QualityValue
     -(@sub_qualities[index])
   end
 
+  def to_json_hash
+    {
+      "id" => @candidate.object_id,
+      "qv" => value,
+      "subqs" => @sub_qualities
+    }
+  end
+
   # The value to display. For this default class we just use the quality value.
   def display_value
     value
