@@ -1,4 +1,4 @@
-require File.join(File.dirname(__FILE__), "single_objective_problems")
+require 'feldtruby/optimize/problems/single_objective_problems'
 
 class MinMulti2ObjectiveFuncOfDimensions < MinFuncOfDimensionObj
   def minimum1

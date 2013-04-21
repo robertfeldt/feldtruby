@@ -28,8 +28,6 @@ class DivObj2 < FeldtRuby::Optimize::EuclideanDistanceToBest
   end
 end
 
-require 'pp'
-
 describe "Archive" do
   before do
     @o = TwoMinOneMax.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new)
@@ -50,7 +48,6 @@ describe "Archive" do
     tl = hash['generalists']['top_list']
     tl.must_be_kind_of Array
     tl.length.must_equal 1
-    pp hash
   end
 
   it 'is adapted to objectives when created' do

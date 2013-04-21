@@ -1,4 +1,4 @@
-require 'feldtruby/optimize/search_space'
+require 'feldtruby/optimize/objective'
 
 class MinContinousFunction < FeldtRuby::Optimize::Objective
   # Subclasses should fix this value.
