@@ -4,6 +4,7 @@ require 'feldtruby/optimize/sub_qualities_comparators'
 require 'feldtruby/logger'
 require 'feldtruby/float'
 require 'feldtruby/annotations'
+require 'feldtruby/json'
 
 # Make all Ruby objects Annotateable so we can attach information to the 
 # individuals being optimized.
@@ -444,6 +445,7 @@ end
 # the objective.
 class QualityValue
   include Comparable
+  include ToJsonImplementedViaDataHash
 
   attr_reader :sub_qualities, :objective, :candidate
 
@@ -473,10 +475,11 @@ class QualityValue
     -(@sub_qualities[index])
   end
 
-  def to_json_hash
+  def data_to_json_hash
     {
       "id" => @candidate.object_id,
       "qv" => value,
+      "qvd" => display_value,
       "subqs" => @sub_qualities
     }
   end
