@@ -561,10 +561,49 @@ class Objective::ParetoNonDominanceComparator < Objective::SubqualityDominanceCo
   end
 end
 
+# Include this if you want epsilon-dominance counting instead of strict dominance counting.
+module EpsilonNonDominanceCounter
+  def epsilon; @epsilon ||= 0.01; end
+  attr_writer :epsilon
+
+  # Count how many times 
+  #   num_c1dom: c1 e-dominates c2 in a subquality
+  #   num_c2dom: c2 e-dominates c1 in a subquality
+  #   num_eq: non of them e-dominates in a subquality (this is frequently 0 for most dominance relations)
+  def count_dominance_per_subquality(c1, c2)
+    e = epsilon
+    q1, q2 = objective.quality_of(c1), objective.quality_of(c2)
+    sq1, sq2 = q1.sub_qualities_as_mins, q2.sub_qualities_as_mins
+    num_c1dom = num_c2dom = num_eq = 0
+    sq1.length.times do |i|
+      if sq1[i] < sq2[i] - e
+        num_c1dom += 1
+      elsif sq2[i] < sq1[i] - e
+        num_c2dom += 1
+      else
+        num_eq += 1
+      end
+    end
+    return num_c1dom, num_c2dom, num_eq
+  end
+end
+
+# Pareto epsilon-non-dominance comparator on the subqualities. Random ordering of 
+# candidates that are of the same rank.
+class Objective::ParetoEpsilonNonDominanceComparator < Objective::ParetoNonDominanceComparator
+  include EpsilonNonDominanceCounter
+end
+
 # Pareto non-dominance comparator on the subqualities. Ordered by highest 
 # aggregate fitness among candidated of same rank.
 class Objective::ParetoNonDominanceThenAggregateQualityComparator < Objective::ParetoNonDominanceComparator
   include Objective::AggregateQualityGroupRankedCandidates
+end
+
+# Pareto epsilon-non-dominance comparator on the subqualities. Ordered by highest 
+# aggregate fitness among candidated of same rank.
+class Objective::ParetoEpsilonNonDominanceThenAggregateQualityComparator < Objective::ParetoNonDominanceThenAggregateQualityComparator
+  include EpsilonNonDominanceCounter
 end
 
 # Class for representing multi-objective _sub_qualitites_ and their summary

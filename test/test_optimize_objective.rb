@@ -550,91 +550,127 @@ describe "LowerAggregateQualityIsBetterComparator" do
   end
 end
 
+# Individuals with their qualities for the TwoMinObjectives1 objective:
+i1 = [1,2] # [1,3] => 4.00
+i2 = [1,3] # [2,4] => 6.00 is dominated by 1
+i3 = [3.5,4] # [0.5,7] => 7.50 not dominated by anyone
+i4 = [1,9] # [8, 10] => 18 is dominated by all the others
+i5 = [99.5, 100] # [0.5, 199.5] => 200 is not dominated by anyone and dominates no one
+
 describe "ParetoNonDominanceComparator" do
   before do
     @c = FeldtRuby::Optimize::Objective::ParetoNonDominanceComparator.new
     @o = TwoMinObjectives1.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new,
       @c)
-
-    @i1 = [1,2] # [1,3] => 4.00
-    @i2 = [1,3] # [2,4] => 6.00 is dominated by 1
-    @i3 = [3.5,4] # [0.5,7] => 7.50 not dominated by anyone
-    @i4 = [1,9] # [8, 10] => 18 is dominated by all the others
-    @i5 = [99.5, 100] # [0.5, 199.5] => 200 is not dominated by anyone and dominates no one
   end
 
   it "counts the dominance per objective correctly when only min objectives" do
-    @c.count_dominance_per_subquality(@i1, @i1).must_equal [0, 0, 2]
-    @c.count_dominance_per_subquality(@i2, @i2).must_equal [0, 0, 2]
-    @c.count_dominance_per_subquality(@i3, @i3).must_equal [0, 0, 2]
+    @c.count_dominance_per_subquality(i1, i1).must_equal [0, 0, 2]
+    @c.count_dominance_per_subquality(i2, i2).must_equal [0, 0, 2]
+    @c.count_dominance_per_subquality(i3, i3).must_equal [0, 0, 2]
 
-    @c.count_dominance_per_subquality(@i1, @i2).must_equal [2, 0, 0]
-    @c.count_dominance_per_subquality(@i2, @i1).must_equal [0, 2, 0]
+    @c.count_dominance_per_subquality(i1, i2).must_equal [2, 0, 0]
+    @c.count_dominance_per_subquality(i2, i1).must_equal [0, 2, 0]
 
-    @c.count_dominance_per_subquality(@i2, @i3).must_equal [1, 1, 0]
-    @c.count_dominance_per_subquality(@i3, @i2).must_equal [1, 1, 0]
+    @c.count_dominance_per_subquality(i2, i3).must_equal [1, 1, 0]
+    @c.count_dominance_per_subquality(i3, i2).must_equal [1, 1, 0]
 
-    @c.count_dominance_per_subquality(@i1, @i3).must_equal [1, 1, 0]
-    @c.count_dominance_per_subquality(@i3, @i1).must_equal [1, 1, 0]
+    @c.count_dominance_per_subquality(i1, i3).must_equal [1, 1, 0]
+    @c.count_dominance_per_subquality(i3, i1).must_equal [1, 1, 0]
   end
 
   it "can directly compare two candidates and say if one is better" do
-    @o.is_better_than?(@i1, @i2).must_equal true
-    @o.is_better_than?(@i2, @i1).must_equal false
+    @o.is_better_than?(i1, i2).must_equal true
+    @o.is_better_than?(i2, i1).must_equal false
 
-    @o.is_better_than?(@i1, @i3).must_equal false
-    @o.is_better_than?(@i3, @i1).must_equal false
+    @o.is_better_than?(i1, i3).must_equal false
+    @o.is_better_than?(i3, i1).must_equal false
 
-    @o.is_better_than?(@i2, @i3).must_equal false
-    @o.is_better_than?(@i3, @i2).must_equal false
+    @o.is_better_than?(i2, i3).must_equal false
+    @o.is_better_than?(i3, i2).must_equal false
   end
 
   it "ranks according to pareto weak dominance order" do
-    @o.rank_candidates([@i1, @i2]).must_equal [@i1, @i2]
-    @o.rank_candidates([@i2, @i1]).must_equal [@i1, @i2]
+    @o.rank_candidates([i1, i2]).must_equal [i1, i2]
+    @o.rank_candidates([i2, i1]).must_equal [i1, i2]
 
-    @o.rank_candidates([@i1, @i4]).must_equal [@i1, @i4]
-    @o.rank_candidates([@i4, @i1]).must_equal [@i1, @i4]
+    @o.rank_candidates([i1, i4]).must_equal [i1, i4]
+    @o.rank_candidates([i4, i1]).must_equal [i1, i4]
 
-    @o.rank_candidates([@i2, @i4]).must_equal [@i2, @i4]
-    @o.rank_candidates([@i4, @i2]).must_equal [@i2, @i4]
+    @o.rank_candidates([i2, i4]).must_equal [i2, i4]
+    @o.rank_candidates([i4, i2]).must_equal [i2, i4]
 
-    @o.rank_candidates([@i3, @i4]).must_equal [@i3, @i4]
-    @o.rank_candidates([@i4, @i3]).must_equal [@i3, @i4]
+    @o.rank_candidates([i3, i4]).must_equal [i3, i4]
+    @o.rank_candidates([i4, i3]).must_equal [i3, i4]
 
     # We cannot assume any order among the other pairwise comparisons
     # since there is no dominance!
 
     # But we can ensure a partial order when taking more than two candidates.
-    r = @o.rank_candidates([@i1, @i2, @i3])
-    r.index(@i1).must_be :<, r.index(@i2)
-    r.index(@i3).must_be :<, r.index(@i2)
+    r = @o.rank_candidates([i1, i2, i3])
+    r.index(i1).must_be :<, r.index(i2)
+    r.index(i3).must_be :<, r.index(i2)
 
-    r = @o.rank_candidates([@i4, @i2, @i3])
-    r.index(@i2).must_be :<, r.index(@i4)
-    r.index(@i3).must_be :<, r.index(@i4)
+    r = @o.rank_candidates([i4, i2, i3])
+    r.index(i2).must_be :<, r.index(i4)
+    r.index(i3).must_be :<, r.index(i4)
 
-    r = @o.rank_candidates([@i4, @i2, @i1])
-    r.index(@i1).must_be :<, r.index(@i2)
-    r.index(@i1).must_be :<, r.index(@i4)
-    r.index(@i2).must_be :<, r.index(@i4)
+    r = @o.rank_candidates([i4, i2, i1])
+    r.index(i1).must_be :<, r.index(i2)
+    r.index(i1).must_be :<, r.index(i4)
+    r.index(i2).must_be :<, r.index(i4)
 
-    r = @o.rank_candidates([@i3, @i4, @i1])
-    r.index(@i1).must_be :<, r.index(@i4)
-    r.index(@i3).must_be :<, r.index(@i4)
+    r = @o.rank_candidates([i3, i4, i1])
+    r.index(i1).must_be :<, r.index(i4)
+    r.index(i3).must_be :<, r.index(i4)
 
-    r = @o.rank_candidates([@i4, @i2, @i1, @i3])
-    r.index(@i1).must_be :<, r.index(@i2)
-    r.index(@i1).must_be :<, r.index(@i4)
-    r.index(@i2).must_be :<, r.index(@i4)
-    r.index(@i3).must_be :<, r.index(@i2)
-    r.index(@i3).must_be :<, r.index(@i4)
+    r = @o.rank_candidates([i4, i2, i1, i3])
+    r.index(i1).must_be :<, r.index(i2)
+    r.index(i1).must_be :<, r.index(i4)
+    r.index(i2).must_be :<, r.index(i4)
+    r.index(i3).must_be :<, r.index(i2)
+    r.index(i3).must_be :<, r.index(i4)
 
-    r = @o.rank_candidates([@i4, @i2, @i1, @i3, @i5])
-    r.index(@i1).must_be :<, r.index(@i2)
-    r.index(@i1).must_be :<, r.index(@i4)
-    r.index(@i2).must_be :<, r.index(@i4)
-    r.index(@i3).must_be :<, r.index(@i2)
-    r.index(@i3).must_be :<, r.index(@i4)
+    r = @o.rank_candidates([i4, i2, i1, i3, i5])
+    r.index(i1).must_be :<, r.index(i2)
+    r.index(i1).must_be :<, r.index(i4)
+    r.index(i2).must_be :<, r.index(i4)
+    r.index(i3).must_be :<, r.index(i2)
+    r.index(i3).must_be :<, r.index(i4)
+  end
+end
+
+describe "ParetoNonDominanceComparator" do
+  before do
+    @c = FeldtRuby::Optimize::Objective::ParetoEpsilonNonDominanceComparator.new
+    @c.epsilon = 1.0
+    @o = TwoMinObjectives1.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new,
+      @c)
+  end
+
+  it "counts the dominance per objective correctly when only min objectives" do
+    @c.count_dominance_per_subquality(i1, i1).must_equal [0, 0, 2]
+    @c.count_dominance_per_subquality(i2, i2).must_equal [0, 0, 2]
+    @c.count_dominance_per_subquality(i3, i3).must_equal [0, 0, 2]
+
+    @c.count_dominance_per_subquality(i1, i2).must_equal [0, 0, 2]
+    @c.count_dominance_per_subquality(i2, i1).must_equal [0, 0, 2]
+
+    @c.count_dominance_per_subquality(i2, i3).must_equal [1, 1, 0]
+    @c.count_dominance_per_subquality(i3, i2).must_equal [1, 1, 0]
+
+    @c.count_dominance_per_subquality(i1, i3).must_equal [1, 0, 1]
+    @c.count_dominance_per_subquality(i3, i1).must_equal [0, 1, 1]
+  end
+
+  it "can directly compare two candidates and say if one is better" do
+    @o.is_better_than?(i1, i2).must_equal false
+    @o.is_better_than?(i2, i1).must_equal false
+
+    @o.is_better_than?(i1, i3).must_equal true
+    @o.is_better_than?(i3, i1).must_equal false
+
+    @o.is_better_than?(i2, i3).must_equal false
+    @o.is_better_than?(i3, i2).must_equal false
   end
 end
