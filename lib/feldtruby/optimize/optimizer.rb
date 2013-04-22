@@ -134,7 +134,7 @@ class Optimizer
 	# Update the archive with newly found candidates. Array of candidates may be empty if
 	# no new candidates found.
 	def update_archive(candidates)
-		candidates.each {|c| @archive.add(c)}
+		candidates.each {|c| @archive.add_if_interesting(c)}
 	end
 end
 
@@ -256,7 +256,7 @@ DefaultOptimizationOptions = {
 	:samplerClass => FeldtRuby::Optimize::RadiusLimitedPopulationSampler,
 	:samplerRadius => 8, # Max distance between individuals selected in same tournament.
 	:archive => nil, # If this is set it takes precedence over archiveClass.
-	:archiveClass => FeldtRuby::Optimize::Archive,
+	:archiveClass => FeldtRuby::Optimize::DiversityArchive,
 	:archiveDiversityObjective => nil, # If this is set it takes precedence over the class in archiveDiversityObjectiveClass
 	:archiveDiversityObjectiveClass => FeldtRuby::Optimize::EuclideanDistanceToBest,
 }

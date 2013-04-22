@@ -5,11 +5,39 @@ require 'feldtruby/json'
 module FeldtRuby::Optimize
 
 # An archive keeps a record of all "interesting" candidate solutions found
-# during optimization. It has two purposes: to contribute to the optimization
-# itself (since seeding a search with previously "good" solutions can improve
-# convergence speed) but also to provide a current view of the best and most
-# interesting solutions found.
-#
+# during optimization or identified by a user. It has two purposes: to contribute 
+# to the optimization itself (since seeding a search with previously "good" 
+# solutions can improve convergence speed) but also to provide a current view of 
+# the best and most interesting solutions found.
+class Archive
+  include FeldtRuby::Logging
+  include ToJsonImplementedViaDataHash
+
+  DefaultParams = {}
+
+  def initialize(fitnessObjective, params = {})
+    @objective = fitnessObjective
+    @params = DefaultParams.clone.update(params)
+    setup_logger_and_distribute_to_instance_variables(@params)
+  end
+
+  # Every archive must have at least one objective which is used to exclude
+  # objects outright if they are "too far" from the best candidates.
+  attr_reader :objective
+
+  # Possibly add candidate if it is considered "interesting".
+  def add_if_interesting(candidate)
+    raise NotImplementedError
+  end
+
+  # Return info about all candidates and their quality values. The info is 
+  # returned as a hash for each candidate.
+  # tagged with a "type"
+  def info_about_all_candidates
+    raise NotImplementedError
+  end
+end
+
 # Interestingness is hard to define but we posit that two elements are always
 # important:
 #  1. Being good, i.e. having good values for one or many of the sub-objectives
@@ -39,12 +67,9 @@ module FeldtRuby::Optimize
 #  generalists    (overall good, aggregated fitness best)
 #  specialists    (doing one thing very, very good, sub-objective fitness best)
 #  weirdos        (different but with clear qualitites, ok but diverse)
-class Archive
-  include FeldtRuby::Logging
-  include ToJsonImplementedViaDataHash
-
+class DiversityArchive < Archive
   DefaultParams = {
-    :NumTopPerGoal => 5, # Number of solutions in top list per individual goal
+    :NumTopPerGoal => 10, # Number of solutions in top list per individual goal
     :NumTopAggregate => 20, # Number of solutions in top list for aggregate quality
 
     # Number of solutions in diversity top list. This often needs to 
@@ -61,14 +86,12 @@ class Archive
     :MaxPercentDistanceToBestForDiversity => 0.05
   }
 
-  attr_reader :objective, :diversity_objective
-
+  attr_reader :diversity_objective
   attr_reader :specialists, :generalists, :weirdos
 
-  def initialize(fitnessObjective, diversityObjective, params = DefaultParams.clone)
-    @objective = fitnessObjective
+  def initialize(fitnessObjective, diversityObjective, params = {})
+    super(fitnessObjective, DefaultParams.clone.update(params))
     self.diversity_objective = diversityObjective
-    @params = DefaultParams.clone.update(params)
     init_top_lists
     setup_logger_and_distribute_to_instance_variables(@params)
   end
@@ -97,7 +120,7 @@ class Archive
 
   # Add a candidate to the top lists if it is good enough to be there. Throws
   # out worse candidates as appropriate.
-  def add(candidate)
+  def add_if_interesting(candidate)
     @specialists.each {|tl| tl.add(candidate)}
 
     # Detect if we get a new best one by saving the previous best.
@@ -135,6 +158,35 @@ class Archive
     end
   end
 
+  # Return array with info about all candidates in archive. Tags them with type
+  # (which list they are on), position on that list and index among lists (only
+  # relevant for specialists, for the others its 0).
+  def info_about_all_candidates
+    index = 0
+    gcs = candidates_to_array(generalists, "generalist")
+    gcs_indexes = gcs.map {|qvh| qvh["id"]}
+    gcs + candidates_to_array(weirdos, "weirdo") + 
+      specialists.map do |s|
+        cs = candidates_to_array(s, "specialist", (index+=1))
+        # We must filter out the specialists that are already among the generalists
+        cs.select {|qvh| !gcs_indexes.include?(qvh["id"])}
+      end.flatten
+  end
+
+  def candidates_to_array(topList, name, index = 0)
+    h = topList.data_to_json_hash
+    qvs = h['quality_values']
+    res = []
+    qvs.zip((1..(qvs.length)).to_a) do |qv,i|
+      h = qv.data_to_json_hash
+      h["pos"] = i
+      h["type"] = name
+      h["list_index"] = index if name == "specialist"
+      res << h
+    end
+    res
+  end
+
   # Is quality of candidate good enough (within MaxPercentDistanceToBestForDiversity
   # from quality of best candidate)
   def good_enough_quality_to_be_interesting?(candidate)
@@ -149,7 +201,7 @@ class Archive
   # based on their (aggregate) quality values.
   class GlobalTopList
     include ToJsonImplementedViaDataHash
-   
+
     def initialize(maxSize, objective)
       @max_size =maxSize
       @top_list = Array.new
@@ -245,6 +297,10 @@ class Archive
       'specialists' => @specialists,
       'weirdos'     => @weirdos}
   end
+end
+
+# A Pareto archive keeps all candidates 
+class ParetoArchive < Archive
 end
 
 end

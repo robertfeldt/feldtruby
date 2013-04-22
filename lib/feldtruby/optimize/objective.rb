@@ -412,16 +412,8 @@ class Objective::MeanWeigthedGlobalRatios < Objective::WeightedSumAggregator
 end
 
 # A Comparator ranks a set of candidates based on their sub-qualities.
-# This default comparator just uses the quality value to sort the candidates, with
-# lower values indicating better quality.
-class Objective::LowerAggregateQualityIsBetterComparator
+class Objective::Comparator
   attr_accessor :objective
-
-  # Return an array with the candidates ranked from best to worst.
-  # Candidates that cannot be distinghuished from each other are randomly ranked.
-  def rank_candidates candidates, weights
-    candidates.sort_by {|c| objective.quality_of(c, weights).value}
-  end
 
   def is_better_than?(c1, c2)
     hat_compare(c1, c2) == 1
@@ -430,10 +422,124 @@ class Objective::LowerAggregateQualityIsBetterComparator
   def is_better_than_for_goal?(index, c1, c2)
     objective.quality_of(c1).sub_quality(index, true) < objective.quality_of(c2).sub_quality(index, true)
   end
+end
+
+# This default comparator just uses the quality value to sort the candidates, with
+# lower values indicating better quality.
+class Objective::LowerAggregateQualityIsBetterComparator < Objective::Comparator
+  # Return an array with the candidates ranked from best to worst.
+  # Candidates that cannot be distinghuished from each other are randomly ranked.
+  def rank_candidates candidates, weights
+    candidates.sort_by {|c| objective.quality_of(c, weights).value}
+  end
 
   def hat_compare(c1, c2)
     # We change the order since smaller values indicates higher quality
     objective.quality_of(c2).value <=> objective.quality_of(c1).value
+  end
+end
+
+# Many of the difference relations are based on first comparing the subqualities
+# pairwise. We collect this common functionality into this class.
+class Objective::SubqualityDominanceComparator < Objective::Comparator
+  # Count how many times 
+  #   num_c1dom: c1 dominates c2 in a subquality
+  #   num_c2dom: c2 dominates c1 in a subquality
+  #   num_eq: non of them dominates in a subquality (this is frequently 0 for most dominance relations)
+  def count_dominance_per_subquality(c1, c2)
+    q1, q2 = objective.quality_of(c1), objective.quality_of(c2)
+    sq1, sq2 = q1.sub_qualities_as_mins, q2.sub_qualities_as_mins
+    num_c1dom = num_c2dom = num_eq = 0
+    sq1.length.times do |i|
+      case (sq1[i] <=> sq2[i])
+      when -1
+        num_c1dom += 1
+      when 1
+        num_c2dom += 1
+      else
+        num_eq += 1
+      end
+    end
+    return num_c1dom, num_c2dom, num_eq
+  end
+
+  # The dominance comparators generally never cares about weights...
+  # At least not for now...
+  def rank_candidates candidates, weights
+    # The case with two is so common that we shortcut it
+    return rank_2candidates(candidates) if candidates.length == 2
+    flatten_group_ranked_candidates group_rank_candidates(candidates)
+  end
+
+  # This gives no guarantees on the order among the candidates in the same group, but
+  # it is not randomized so might be bias in there. Subclasses should override if
+  # they want some other guarantees.
+  def flatten_group_ranked_candidates(groupRankedCandidates)
+    groupRankedCandidates.flatten(1)
+  end
+
+  # This is Deb's non-dominated sorting algorithm that returns an array of the
+  # classes of non-dominated candidates. Each such class is a separate array.
+  def group_rank_candidates candidates
+    left_to_sort = candidates.clone
+    f = []
+    while left_to_sort.length > 0
+      f << (fk = [])
+      left_to_sort.each do |ci|
+        (fk << ci) unless left_to_sort.any? {|cj| is_better_than?(cj, ci)}
+      end
+      if fk.length == 0
+        f[f.length-1] = left_to_sort
+        break
+      else
+        left_to_sort -= fk
+      end
+    end
+    f
+  end
+
+  # Quicker implementation when there is only two candidates to rank.
+  def rank_2candidates(candidates)
+    if is_better_than?(candidates[0], candidates[1])
+      candidates
+    else
+      [candidates[1], candidates[0]]
+    end
+  end
+end
+
+# Include this module to get random order among candidates of similar rank
+# (when they are returned from rank_candidates).
+module Objective::RandomizeGroupRankedCandidates
+  def flatten_group_ranked_candidates(groupRankedCandidates)
+    groupRankedCandidates.map {|g| g.shuffle}.flatten(1)
+  end
+end
+
+# Include this module to get order based on aggregate fitness among candidates of similar rank
+# (when they are returned from rank_candidates). We assume lower aggregate quality is better.
+module Objective::RandomizeGroupRankedCandidates
+  def flatten_group_ranked_candidates(groupRankedCandidates)
+    o = self.objective
+    groupRankedCandidates.map {|g| g.sort_by {|c| o.quality_of(c).value}}.flatten(1)
+  end
+end
+
+# Pareto non-dominance comparator on the subqualities.
+class Objective::ParetoNonDominanceComparator < Objective::SubqualityDominanceComparator
+  include Objective::RandomizeGroupRankedCandidates
+
+  def hat_compare(c1, c2)
+    num_c1dom, num_c2dom, num_eq = count_dominance_per_subquality(c1, c2)
+    if num_c1dom > 0
+      # Note! We return 1 to indicate that c2 is worse since minimization is the default!
+      (num_c2dom == 0) ? 1 : 0
+    elsif num_c2dom > 0
+      # Note! We return -1 to indicate that c1 is worse since minimization is the default!
+      (num_c1dom == 0) ? -1 : 0
+    else
+      0
+    end
   end
 end
 
@@ -475,12 +581,22 @@ class QualityValue
     -(@sub_qualities[index])
   end
 
+  # Returns an array with all sub_qualities mapped as minimization values, i.e.
+  # the value of max goals are negated.
+  def sub_qualities_as_mins
+    len = sub_qualities.length
+    sqmins = Array.new(len)
+    len.times {|i| sqmins[i] = sub_quality(i, true)}
+    sqmins
+  end
+
   def data_to_json_hash
     {
       "id" => @candidate.object_id,
       "qv" => value,
       "qvd" => display_value,
-      "subqs" => @sub_qualities
+      "subqs" => @sub_qualities,
+      "candidate" => @candidate.to_a
     }
   end
 

@@ -28,18 +28,18 @@ class DivObj2 < FeldtRuby::Optimize::EuclideanDistanceToBest
   end
 end
 
-describe "Archive" do
+describe "DiversityArchive" do
   before do
     @o = TwoMinOneMax.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new)
     @do = FeldtRuby::Optimize::EuclideanDistanceToBest.new(FeldtRuby::Optimize::Objective::WeightedSumAggregator.new)
-    @a = FeldtRuby::Optimize::Archive.new(@o, @do, {
+    @a = FeldtRuby::Optimize::DiversityArchive.new(@o, @do, {
     :NumTopPerGoal => 2,
     :NumTopAggregate => 3,
     :NumTopDiversityAggregate => 2})
   end
 
   it 'can dump itself to flat json' do
-    @a.add [1,2,3]
+    @a.add_if_interesting [1,2,3]
     js = @a.to_json
     js.must_be_kind_of String
     hash = JSON.parse js
@@ -50,12 +50,21 @@ describe "Archive" do
     tl.length.must_equal 1
   end
 
+  it 'can output info about all candidates in the archive' do
+    @a.add_if_interesting [1,2,3]
+    @a.add_if_interesting [1,2,4]
+    cs = @a.info_about_all_candidates
+    cs.must_be_kind_of Array
+    cs.length.must_equal 2
+    cs.first.keys.sort.must_equal ["id", "qv", "qvd", "subqs", "candidate", "pos", "type"].sort
+  end
+
   it 'is adapted to objectives when created' do
     @a.objective.must_equal @o
     @a.diversity_objective.must_equal @do
     @a.specialists.length.must_equal @o.num_goals
-    @a.generalists.must_be_kind_of FeldtRuby::Optimize::Archive::GlobalTopList
-    @a.weirdos.must_be_kind_of FeldtRuby::Optimize::Archive::GlobalTopList
+    @a.generalists.must_be_kind_of FeldtRuby::Optimize::DiversityArchive::GlobalTopList
+    @a.weirdos.must_be_kind_of FeldtRuby::Optimize::DiversityArchive::GlobalTopList
   end
 
   it 'does not yet have a best value when created' do
@@ -64,7 +73,7 @@ describe "Archive" do
 
   it 'properly handles additions' do
     i1 = [1,2,3]
-    @a.add i1 # [6, 3, 1] => 10
+    @a.add_if_interesting i1 # [6, 3, 1] => 10
 
     @a.best.must_equal i1
 
@@ -78,7 +87,7 @@ describe "Archive" do
     @a.weirdos.length.must_equal 0
 
     i2 = [1,2,4]
-    @a.add i2 # [7, 4, 1] => 12
+    @a.add_if_interesting i2 # [7, 4, 1] => 12
 
     @a.best.must_equal i1
 
@@ -97,7 +106,7 @@ describe "Archive" do
     @a.weirdos.length.must_equal 0
 
     i3 = [1,2,0] # [3, 2, 0] => 5
-    @a.add i3
+    @a.add_if_interesting i3
 
     @a.best.must_equal i3
     @a.generalists.length.must_equal 3
@@ -117,7 +126,7 @@ describe "Archive" do
 
     # Introduce a new baddest one
     i4 = [5,5,10] # [20, 10, 5] => 35
-    @a.add i4
+    @a.add_if_interesting i4
 
     @a.best.must_equal i3
     @a.generalists.length.must_equal 3
@@ -137,7 +146,7 @@ describe "Archive" do
 
     # Introduce a new 2nd best
     i5 = [3,0,1] # [4, 3, 0] => 7
-    @a.add i5
+    @a.add_if_interesting i5
 
     @a.best.must_equal i3
     @a.generalists.length.must_equal 3
@@ -158,10 +167,10 @@ describe "Archive" do
     # Introduce 2 new that is close to best and goes into top list but also into
     # weirdos.
     i6 = [1.05,2.05,0] # [3.1, 2.05, 0] => 5.15
-    @a.add i6
+    @a.add_if_interesting i6
 
     i7 = [1.01,2.00,0.10] # [3.11, 2.00, 0.1] => 5.01
-    @a.add i7
+    @a.add_if_interesting i7
 
     @a.best.must_equal i3
     @a.generalists.length.must_equal 3
@@ -185,7 +194,7 @@ describe "Archive" do
     # or specialists but goes on top of weirdos.
     i8 = [1.03, 2.10, 0.1] # [3.23, 2.10, 0.1] => 5.23
     @a.good_enough_quality_to_be_interesting?(i8).must_equal true
-    @a.add i8
+    @a.add_if_interesting i8
 
     @a.best.must_equal i3
     @a.generalists.length.must_equal 3
@@ -207,7 +216,7 @@ describe "Archive" do
 
     # Less weird than i8 but still goes into weirdos.
     i9 = [1.04, 2.08, 0.05] # [3.17, 2.08, 0.05] => 5.20
-    @a.add i9
+    @a.add_if_interesting i9
 
     @a.best.must_equal i3
     @a.generalists.length.must_equal 3
