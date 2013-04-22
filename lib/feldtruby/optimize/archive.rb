@@ -299,8 +299,31 @@ class DiversityArchive < Archive
   end
 end
 
-# A Pareto archive keeps all candidates 
-class ParetoArchive < Archive
+# A Nondominated archive keeps all candidates that are non-dominated up to a certain
+# size.
+class NondominatedArchive < Archive
+  DefaultParams = {
+    :NumCandidates => 100
+  }
+
+  def initialize(fitnessObjective, params = {})
+    # We need to implement this since we have new parameters compared to the super class.
+    super(fitnessObjective, DefaultParams.clone.update(params))
+    @candidates = []
+  end
+
+  def add_if_interesting(candidate)
+    @candidates << candidate
+    @objective.group_rank_candidates()
+  end
+
+  def info_about_all_candidates
+    @candidates.map do |c| 
+      h = @objective.quality_of(c).data_to_json_hash
+      h["pos"] = 0 # No order among the non-dominated
+      h["type"] = "Non-dominated"
+    end
+  end
 end
 
 end

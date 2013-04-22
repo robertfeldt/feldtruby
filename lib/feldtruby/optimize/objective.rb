@@ -183,6 +183,16 @@ class Objective
     @comparator.rank_candidates candidates, weights
   end
 
+  def group_rank_candidates(candidates, weights = self.weights)
+    # We first ensure all candidates have calculated sub-qualities, then we
+    # call the comparator. This ensures that the gobals are already correctly
+    # updated on each quality value.
+    candidates.map {|c| sub_qualities_of(c, true)}
+
+    # Now just let the comparator rank the candidates
+    @comparator.group_rank_candidates candidates, weights
+  end
+
   # Return true iff candidate1 is better than candidate2. Will update their
   # quality values if they are out of date.
   def is_better_than?(candidate1, candidate2)
@@ -422,17 +432,24 @@ class Objective::Comparator
   def is_better_than_for_goal?(index, c1, c2)
     objective.quality_of(c1).sub_quality(index, true) < objective.quality_of(c2).sub_quality(index, true)
   end
-end
 
-# This default comparator just uses the quality value to sort the candidates, with
-# lower values indicating better quality.
-class Objective::LowerAggregateQualityIsBetterComparator < Objective::Comparator
   # Return an array with the candidates ranked from best to worst.
   # Candidates that cannot be distinghuished from each other are randomly ranked.
   def rank_candidates candidates, weights
     candidates.sort_by {|c| objective.quality_of(c, weights).value}
   end
 
+  # Group ranking candidates. Default is to use the normal ranking and then just
+  # wrap each candidate into its own group. Only supplied so all comparators
+  # are "complete" in their interface; not recommended for actual use.
+  def group_rank_candidates candidates, weights
+    rank_candidates(candidates, weights).map {|a| [a]}
+  end
+end
+
+# This default comparator just uses the quality value to sort the candidates, with
+# lower values indicating better quality.
+class Objective::LowerAggregateQualityIsBetterComparator < Objective::Comparator
   def hat_compare(c1, c2)
     # We change the order since smaller values indicates higher quality
     objective.quality_of(c2).value <=> objective.quality_of(c1).value
@@ -518,14 +535,15 @@ end
 
 # Include this module to get order based on aggregate fitness among candidates of similar rank
 # (when they are returned from rank_candidates). We assume lower aggregate quality is better.
-module Objective::RandomizeGroupRankedCandidates
+module Objective::AggregateQualityGroupRankedCandidates
   def flatten_group_ranked_candidates(groupRankedCandidates)
     o = self.objective
     groupRankedCandidates.map {|g| g.sort_by {|c| o.quality_of(c).value}}.flatten(1)
   end
 end
 
-# Pareto non-dominance comparator on the subqualities.
+# Pareto non-dominance comparator on the subqualities. Random ordering of 
+# candidates that are of the same rank.
 class Objective::ParetoNonDominanceComparator < Objective::SubqualityDominanceComparator
   include Objective::RandomizeGroupRankedCandidates
 
@@ -541,6 +559,12 @@ class Objective::ParetoNonDominanceComparator < Objective::SubqualityDominanceCo
       0
     end
   end
+end
+
+# Pareto non-dominance comparator on the subqualities. Ordered by highest 
+# aggregate fitness among candidated of same rank.
+class Objective::ParetoNonDominanceThenAggregateQualityComparator < Objective::ParetoNonDominanceComparator
+  include Objective::AggregateQualityGroupRankedCandidates
 end
 
 # Class for representing multi-objective _sub_qualitites_ and their summary
