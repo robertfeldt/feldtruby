@@ -442,7 +442,7 @@ class Objective::Comparator
   # Group ranking candidates. Default is to use the normal ranking and then just
   # wrap each candidate into its own group. Only supplied so all comparators
   # are "complete" in their interface; not recommended for actual use.
-  def group_rank_candidates candidates, weights
+  def group_rank_candidates candidates, weights = {}
     rank_candidates(candidates, weights).map {|a| [a]}
   end
 end
@@ -497,7 +497,7 @@ class Objective::SubqualityDominanceComparator < Objective::Comparator
 
   # This is Deb's non-dominated sorting algorithm that returns an array of the
   # classes of non-dominated candidates. Each such class is a separate array.
-  def group_rank_candidates candidates
+  def group_rank_candidates candidates, weights = {}
     left_to_sort = candidates.clone
     f = []
     while left_to_sort.length > 0

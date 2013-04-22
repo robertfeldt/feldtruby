@@ -15,9 +15,10 @@ class Archive
 
   DefaultParams = {}
 
-  def initialize(fitnessObjective, params = {})
+  def initialize(fitnessObjective, diversityObjective = nil, params = {})
     @objective = fitnessObjective
     @params = DefaultParams.clone.update(params)
+    self.diversity_objective = diversityObjective
     setup_logger_and_distribute_to_instance_variables(@params)
   end
 
@@ -25,8 +26,20 @@ class Archive
   # objects outright if they are "too far" from the best candidates.
   attr_reader :objective
 
+  attr_reader :diversity_objective
+
+  def diversity_objective=(diversityObjective)
+    @diversity_objective = diversityObjective
+    @diversity_objective.archive = self if @diversity_objective.respond_to?(:archive=)
+    @diversity_objective.quality_objective = @objective if @diversity_objective.respond_to?(:quality_objective=)
+  end
+
   # Possibly add candidate if it is considered "interesting".
   def add_if_interesting(candidate)
+    raise NotImplementedError
+  end
+
+  def best
     raise NotImplementedError
   end
 
@@ -86,20 +99,12 @@ class DiversityArchive < Archive
     :MaxPercentDistanceToBestForDiversity => 0.05
   }
 
-  attr_reader :diversity_objective
   attr_reader :specialists, :generalists, :weirdos
 
-  def initialize(fitnessObjective, diversityObjective, params = {})
-    super(fitnessObjective, DefaultParams.clone.update(params))
-    self.diversity_objective = diversityObjective
+  def initialize(fitnessObjective, diversityObjective = nil, params = {})
+    super(fitnessObjective, diversityObjective, DefaultParams.clone.update(params))
     init_top_lists
     setup_logger_and_distribute_to_instance_variables(@params)
-  end
-
-  def diversity_objective=(diversityObjective)
-    @diversity_objective = diversityObjective
-    @diversity_objective.archive = self if @diversity_objective.respond_to?(:archive=)
-    @diversity_objective.quality_objective = @objective if @diversity_objective.respond_to?(:quality_objective=)
   end
 
   def best
@@ -306,22 +311,28 @@ class NondominatedArchive < Archive
     :NumCandidates => 100
   }
 
-  def initialize(fitnessObjective, params = {})
+  def initialize(fitnessObjective, diversityObjective = nil, params = {})
     # We need to implement this since we have new parameters compared to the super class.
-    super(fitnessObjective, DefaultParams.clone.update(params))
+    super(fitnessObjective, diversityObjective, DefaultParams.clone.update(params))
     @candidates = []
+  end
+
+  def best
+    @candidates.first
   end
 
   def add_if_interesting(candidate)
     @candidates << candidate
-    @objective.group_rank_candidates()
+    @candidates = @objective.group_rank_candidates(@candidates).first
   end
 
   def info_about_all_candidates
+    index = 0
     @candidates.map do |c| 
       h = @objective.quality_of(c).data_to_json_hash
-      h["pos"] = 0 # No order among the non-dominated
-      h["type"] = "Non-dominated"
+      h["pos"] = (index += 1)
+      h["type"] = "NonDominated"
+      h
     end
   end
 end

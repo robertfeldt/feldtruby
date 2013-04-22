@@ -22,3 +22,33 @@ describe "cdm" do
     cdm("aa", "ab").must_be :>, 0.0
   end  
 end
+
+def rand_string(length)
+  chars = ('a'..'z').to_a
+  num_chars = chars.length
+  Array.new(length).map {chars[rand(num_chars)]}.join
+end
+
+def time_block(&block)
+  start = Time.now
+  res = block.call
+  elapsed = Time.now - start
+  return res, elapsed 
+end
+
+describe "CachingStringDistance" do
+  it "is quicker the second time we call it with very large strings" do
+
+    csd = CachingStringDistance.new(NormalizedCompressionDistance.new)
+
+    100.times do
+      s1 = rand_string(1e3)
+      s2 = rand_string(1e3)
+      res, elapsed = time_block {csd.distance(s1, s2)}
+      res2, elapsed2 = time_block {csd.distance(s1, s2)}
+      res.must_equal res2
+      elapsed2.must_be :<, elapsed
+    end
+    
+  end
+end
