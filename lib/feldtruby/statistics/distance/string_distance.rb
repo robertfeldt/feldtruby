@@ -2,48 +2,56 @@ require 'zlib'
 
 module FeldtRuby::Statistics
 
-class StringDistance
+module ZlibCompressor
   def compress(s)
     Zlib::Deflate.deflate(s, 9)
   end
+end
 
+class StringDistance
   def compressed_length(s)
     compress(s).length
   end
 
-  def distance(string1, string2)
-    raise NotImplementedError
+  def distance(str1, str2)
+    return 0.0 if str1 == str2
+    s1len = compressed_length(str1)
+    s2len = compressed_length(str2)
+    s1s2len = compressed_length(str1 + str2)
+    distance_formula s1len, s2len, s1s2len
+  end
+end
+
+module NCDFormula
+  def distance_formula(s1len, s2len, s1s2len)
+    (s1s2len - [s1len, s2len].min).to_f / ([s1len, s2len].max)
   end
 end
 
 # Cilibrasi and Vitanyi's NCD.
-class NormalizedCompressionDistance < StringDistance
-  def distance(string1, string2)
-    return 0.0 if string1 == string2
-    c1 = compressed_length(string1)
-    c2 = compressed_length(string2)
-    c_1_2 = compressed_length(string1 + string2)
-    (c_1_2 - [c1, c2].min).to_f / ([c1, c2].max)
-  end
+class NCD < StringDistance
+  include ZlibCompressor
+  include NCDFormula
 end
 
-def ncd(string1, string2)
-  (@ncd ||= NormalizedCompressionDistance.new).distance(string1, string2)
+def ncd(str1, str2)
+  (@ncd ||= NCD.new).distance(str1, str2)
+end
+
+module CDMFormula
+  def distance_formula(s1len, s2len, s1s2len)
+    s1s2len.to_f / (s1len + s2len)
+  end
 end
 
 # Keogh et al's CDM.
-class CompressionBasedDissimilarityMeasure < StringDistance
-  def distance(string1, string2)
-    return 0.0 if string1 == string2
-    c1 = compressed_length(string1)
-    c2 = compressed_length(string2)
-    c_1_2 = compressed_length(string1 + string2)
-    c_1_2.to_f / (c1 + c2)
-  end
+class CDM < StringDistance
+  include ZlibCompressor
+  include CDMFormula
 end
 
-def cdm(string1, string2)
-  (@cdm ||= CompressionBasedDissimilarityMeasure.new).distance(string1, string2)
+def cdm(str1, str2)
+  (@cdm ||= CDM.new).distance(str1, str2)
 end
 
 class CachingStringDistance < StringDistance
@@ -63,10 +71,10 @@ class CachingStringDistance < StringDistance
     @cache_strings[s] = @sub.compressed_length(s)
   end
 
-  def distance(string1, string2)
-    cached = @cache_pairs[[string1, string2]]
+  def distance(str1, str2)
+    cached = @cache_pairs[[str1, str2]]
     return cached if cached
-    @cache_pairs[[string1, string2]] = @sub.distance(string1, string2)
+    @cache_pairs[[str1, str2]] = @sub.distance(str1, str2)
   end
 end
 

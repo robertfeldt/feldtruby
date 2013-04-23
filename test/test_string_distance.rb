@@ -39,7 +39,7 @@ end
 describe "CachingStringDistance" do
   it "is quicker the second time we call it with very large strings" do
 
-    csd = CachingStringDistance.new(NormalizedCompressionDistance.new)
+    csd = CachingStringDistance.new(NCD.new)
 
     100.times do
       s1 = rand_string(1e3)
