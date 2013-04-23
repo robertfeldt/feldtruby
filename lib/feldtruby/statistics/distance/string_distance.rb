@@ -28,11 +28,13 @@ module NCDFormula
   end
 end
 
-# Cilibrasi and Vitanyi's NCD.
-class NCD < StringDistance
+# Cilibrasi and Vitanyi's NCD, using Zlib for compression.
+class NCD_Zlib < StringDistance
   include ZlibCompressor
   include NCDFormula
 end
+# Zlib is the default compressor.
+NCD = NCD_Zlib
 
 def ncd(str1, str2)
   (@ncd ||= NCD.new).distance(str1, str2)
@@ -44,14 +46,37 @@ module CDMFormula
   end
 end
 
-# Keogh et al's CDM.
-class CDM < StringDistance
+# Keogh et al's CDM, using Zlib for compression.
+class CDM_Zlib < StringDistance
   include ZlibCompressor
   include CDMFormula
 end
+# Zlib is the default compressor.
+CDM = CDM_Zlib
 
 def cdm(str1, str2)
   (@cdm ||= CDM.new).distance(str1, str2)
+end
+
+# If ruby-xz is installed and we can load it (requires also liblzma to be 
+# installed) then we add a XZ compressor.
+XZInstalled = require("xz")
+if XZInstalled
+  module XZCompressor
+    def compress(s)
+      XZ.compress(s)
+    end
+  end
+
+  # NCD using XZ compression; better but slower.
+  class NCD_XZ < NCD
+    include XZCompressor
+  end
+
+  # CDM using XZ compression; better but slower.
+  class CDM_XZ < CDM
+    include XZCompressor
+  end
 end
 
 class CachingStringDistance < StringDistance
