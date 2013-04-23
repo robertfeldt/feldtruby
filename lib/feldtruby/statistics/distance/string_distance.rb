@@ -99,7 +99,14 @@ class CachingStringDistance < StringDistance
   def distance(str1, str2)
     cached = @cache_pairs[[str1, str2]]
     return cached if cached
-    @cache_pairs[[str1, str2]] = @sub.distance(str1, str2)
+    s1len = compressed_length(str1)
+    s2len = compressed_length(str2)
+    s1s2len = compressed_length(str1 + str2)
+    @cache_pairs[[str1, str2]] = @sub.distance_formula s1len, s2len, s1s2len
+  end
+
+  def in_cache?(str)
+    @cache_strings.has_key?(str) || @cache_pairs.has_key?(str)
   end
 end
 

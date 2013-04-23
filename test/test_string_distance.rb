@@ -37,18 +37,33 @@ def time_block(&block)
 end
 
 describe "CachingStringDistance" do
-  it "is quicker the second time we call it with very large strings" do
+  before do
+    @csd = CachingStringDistance.new(NCD.new)
+  end
 
-    csd = CachingStringDistance.new(NCD.new)
+  it "is quicker the second time we call it with very large strings" do
 
     100.times do
       s1 = rand_string(1e3)
       s2 = rand_string(1e3)
-      res, elapsed = time_block {csd.distance(s1, s2)}
-      res2, elapsed2 = time_block {csd.distance(s1, s2)}
+      res, elapsed = time_block {@csd.distance(s1, s2)}
+      res2, elapsed2 = time_block {@csd.distance(s1, s2)}
       res.must_equal res2
       elapsed2.must_be :<, elapsed
     end
     
+  end
+
+  it "the string is in the cache after we have checked its distance" do
+    s1 = rand_string(1e3)
+    s2 = rand_string(1e3)
+
+    @csd.in_cache?(s1).must_equal false
+    @csd.in_cache?(s2).must_equal false
+    
+    @csd.distance(s1, s2)
+
+    @csd.in_cache?(s1).must_equal true
+    @csd.in_cache?(s2).must_equal true
   end
 end
