@@ -68,7 +68,7 @@ class DistanceMatrix
   # dump it to a postscript file. Assumes that maketree from libqsearch
   # and neato from graphviz is installed.
   def to_quartet_tree_in_postscript_file(postscriptFilename)
-    FeldtRuby::CommandRunner.new(true, true) do |c|
+    FeldtRuby::CommandRunner.new do |c|
 
       # Run make tree command on text dist matrix. Creates result in treefile.dot.
       c.run "maketree", c.use_as_file_arg(to_libqsearch_text_distance_matrix)
@@ -80,6 +80,23 @@ class DistanceMatrix
       c.run "neato -Tps -Gsize=7,7 -o", postscriptFilename, "treefile.dot" 
 
     end.start
+  end
+
+  # Create a D3.js force layout format json hash which can be later dumped
+  # to json and used as input in D3.
+  def to_d3_force_layout
+    index = -1
+    nodes = names.map {|n| {"name" => n, "group" => 1, "index" => (index+=1)}}
+    links = []
+    nodes.each do |srcnode|
+      nodes.each do |destnode|
+        next if srcnode == destnode
+        d = distance(srcnode["name"], destnode["name"])
+        links << {"source" => srcnode["index"], "target" => destnode["index"], 
+          "value" => d}
+      end
+    end
+    {"nodes" => nodes, "links" => links}
   end
 
 end

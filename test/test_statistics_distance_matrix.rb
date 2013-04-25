@@ -72,10 +72,14 @@ describe "DistanceMatrix" do
   end
 end
 
+#require 'pp'
+#require 'json'
+
 describe "FileDistanceMatrix" do
   it "can create a tree.ps file using neato if libqsearch (maketree) and neato (graphviz) are both installed" do
     #if `maketree -v` =~ /\d+\.\d+.\d+/ && `neato -V` =~ /neato - graphviz version \d+\.\d+.\d+/
       fdm = FeldtRuby::Statistics::FileDistanceMatrix.from_files_in_dir "lib/feldtruby/statistics"
+      #puts fdm.to_d3_force_layout.to_json
       output_file = "tree.ps"
       fdm.to_quartet_tree_in_postscript_file output_file
       File.exist?(output_file).must_equal true

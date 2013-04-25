@@ -12,7 +12,6 @@ class CommandRunner
 
   # State files that should not be deleted (since they are result files).
   def keep_files(*args)
-    puts "Keeping files: #{args}"
     @files_to_keep += args
   end
 
@@ -38,8 +37,8 @@ class CommandRunner
   # of the command, except ones that has been marked as result files to be kept.
   def delete_files_not_to_be_kept
     files_in_dir(".").each do |file|
-      next if @files_pre.include?(file) || @files_to_keep.include?(file)
-      puts "Deleting file: #{file}"
+      fn = File.basename(file)
+      next if @files_pre.include?(file) || @files_to_keep.include?(file) || @files_pre.include?(fn) || @files_to_keep.include?(fn)
       File.delete file
     end
   end
