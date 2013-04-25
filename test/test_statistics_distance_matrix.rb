@@ -1,11 +1,22 @@
 require 'feldtruby/statistics/distance/distance_matrix'
 include FeldtRuby::Statistics
 
+def rand_string(length)
+  chars = ('a'..'z').to_a
+  num_chars = chars.length
+  Array.new(length).map {chars[rand(num_chars)]}.join
+end
+
 describe "DistanceMatrix" do
   before do
     @dm0 = FeldtRuby::Statistics::DistanceMatrix.new
     @dm2 = FeldtRuby::Statistics::DistanceMatrix.new({:a3 => "aaa", :a2b => "aab"})
     @dm3 = FeldtRuby::Statistics::DistanceMatrix.new({:a3 => "aaa", :a2b => "aab", :a1b2 => "abb"})
+    a1 = rand_string(100)
+    a2 = rand_string(100)
+    b1 = rand_string(100)
+    b2 = rand_string(100)
+    @dm4 = FeldtRuby::Statistics::DistanceMatrix.new({:a1a2 => (a1+a2), :a2a1 => (a2+a1), :b1b2 => (b1+b2), :b2b1 => (b2+b1)})
   end
 
   it "can be created empty" do
@@ -19,6 +30,10 @@ describe "DistanceMatrix" do
 
   it "can be created with two nodes" do
     @dm2.num_nodes.must_equal 2
+  end
+
+  it "can be created with three nodes" do
+    @dm3.num_nodes.must_equal 3
   end
 
   it "can return the distance between pairs of objects in the matrix" do
@@ -37,5 +52,18 @@ describe "DistanceMatrix" do
   it "can update with new objects after initialization" do
     @dm3.add_node :a4, "aaaa"
     @dm3.num_nodes.must_equal 4
+  end
+
+  it "can dump to libqsearch text format" do
+    s = @dm3.to_libqsearch_text_distance_matrix
+    lines = s.split("\n")
+    lines.length.must_equal 3
+    lines.each do |line|
+      vals = line.split(" ")
+      @dm3.names.include?(vals[0])
+      vals[1..-1].each do |v|
+        v.must_match /\d+,\d+/
+      end
+    end
   end
 end

@@ -1,4 +1,5 @@
 require 'feldtruby/statistics/distance/string_distance'
+require 'stringio'
 
 module FeldtRuby::Statistics
 
@@ -29,6 +30,10 @@ class DistanceMatrix
     @nodes.length
   end
 
+  def names
+    @nodes.keys
+  end
+
   # Add a named object.
   def add_node name, object
     @nodes[name] = object
@@ -40,13 +45,21 @@ class DistanceMatrix
     @distances[name1][name2] = @distance_func.distance(@nodes[name1], @nodes[name2])
   end
 
-  # Deprecated.
-  def create_name_from_object object
-    name = object.to_s.gsub(/\s*/, "")[0,20]
-    while @nodes.keys.include?(name)
-      name += rand(10)
+  # Output a distance matrix in the text format accepted by the libqsearch
+  # library by Rudi Cilibrasi.
+  def to_libqsearch_text_distance_matrix
+    sio = StringIO.new
+    ns = names
+    ns.each do |src_name|
+      sio.print src_name
+      ns.each do |dest_name|
+        next if dest_name == src_name
+        d = distance(src_name, dest_name)
+        sio.print( " " + d.to_s.gsub(".", ",") )
+      end
+      sio.print "\n"
     end
-    name
+    sio.string
   end
 
 end
