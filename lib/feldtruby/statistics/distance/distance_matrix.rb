@@ -1,4 +1,6 @@
+require 'feldtruby'
 require 'feldtruby/statistics/distance/string_distance'
+require 'feldtruby/command_runner'
 require 'stringio'
 
 module FeldtRuby::Statistics
@@ -8,7 +10,7 @@ module FeldtRuby::Statistics
 # object (a string). Links are given as a map from a pair of node names to the weight.
 class DistanceMatrix
 
-  def initialize(nodes = {}, distance = FeldtRuby::Statistics::NCD.new)
+  def initialize(nodes = {}, distanceFunc = FeldtRuby::Statistics::NCD.new)
     # First create an empty hash of the nodes, then update it with the supplied
     # nodes below.
     @nodes = {}
@@ -17,7 +19,7 @@ class DistanceMatrix
     # will be beneficial since we know we will be calling with the same
     # individual objects again and again (since they are in many pairs of the
     # matrix).    
-    @distance_func = FeldtRuby::Statistics::CachingStringDistance.new(distance)
+    @distance_func = FeldtRuby::Statistics::CachingStringDistance.new(distanceFunc)
 
     # The distances are saved as a hash from the (src) node names to a hash
     # mapping the (dest) node name to the distance (saved as a float).
@@ -62,6 +64,47 @@ class DistanceMatrix
     sio.string
   end
 
+  # Build an optimal quartet tree from the distances in this matrix, then
+  # dump it to a postscript file. Assumes that maketree from libqsearch
+  # and neato from graphviz is installed.
+  def to_quartet_tree_in_postscript_file(postscriptFilename)
+    FeldtRuby::CommandRunner.new(true, true) do |c|
+
+      # Run make tree command on text dist matrix. Creates result in treefile.dot.
+      c.run "maketree", c.use_as_file_arg(to_libqsearch_text_distance_matrix)
+
+      # Ensure the postscript file is not deleted
+      c.keep_file postscriptFilename
+
+      # Run neato command on treefile.dot file
+      c.run "neato -Tps -Gsize=7,7 -o", postscriptFilename, "treefile.dot" 
+
+    end.start
+  end
+
+end
+
+# Create a distance matrix between files identified by their file paths.
+class FileDistanceMatrix < DistanceMatrix
+  def initialize(filepaths = [], distanceFunc = FeldtRuby::Statistics::NCD.new)
+    super({}, distanceFunc)
+    filepaths.each {|fp| add_file(fp)}
+  end
+
+  def add_file filePath
+    File.open(filePath, "r") do |fh|
+      # We can't use the file path since maketree cannot handle slashes in the object names.
+      # Lets strip of and only use the filename.
+      add_node File.basename(filePath), fh.read
+    end
+  end
+
+  private :add_node
+
+  def self.from_files_in_dir(dir, distanceFunc = FeldtRuby::Statistics::NCD.new)
+    files = Dir[dir + "/*"].select {|fp| File.file?(fp)}
+    new files, distanceFunc
+  end
 end
 
 end

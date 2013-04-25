@@ -16,7 +16,10 @@ describe "DistanceMatrix" do
     a2 = rand_string(100)
     b1 = rand_string(100)
     b2 = rand_string(100)
-    @dm4 = FeldtRuby::Statistics::DistanceMatrix.new({:a1a2 => (a1+a2), :a2a1 => (a2+a1), :b1b2 => (b1+b2), :b2b1 => (b2+b1)})
+    @dm5 = FeldtRuby::Statistics::DistanceMatrix.new({
+      :a1a2 => (a1+a2), :a2a1 => (a2+a1), 
+      :b1b2 => (b1+b2), :b2b1 => (b2+b1),
+      :a1a2b1 => (a1+a2+b1)})
   end
 
   it "can be created empty" do
@@ -65,5 +68,18 @@ describe "DistanceMatrix" do
         v.must_match /\d+,\d+/
       end
     end
+    @dm5.to_libqsearch_text_distance_matrix.split("\n").length.must_equal 5
+  end
+end
+
+describe "FileDistanceMatrix" do
+  it "can create a tree.ps file using neato if libqsearch (maketree) and neato (graphviz) are both installed" do
+    #if `maketree -v` =~ /\d+\.\d+.\d+/ && `neato -V` =~ /neato - graphviz version \d+\.\d+.\d+/
+      fdm = FeldtRuby::Statistics::FileDistanceMatrix.from_files_in_dir "lib/feldtruby/statistics"
+      output_file = "tree.ps"
+      fdm.to_quartet_tree_in_postscript_file output_file
+      File.exist?(output_file).must_equal true
+      File.delete output_file
+    #end
   end
 end
