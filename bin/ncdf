@@ -9,6 +9,7 @@ require 'fileutils'
 require 'feldtruby/statistics/distance/ncd_external'
 require 'stringio'
 require 'pp'
+require 'feldtruby/version'
 
 ###############################################################################
 # CONSTANTS
@@ -47,7 +48,7 @@ class NcdCommand < Thor
 
   desc "version", "Print the current version of swagr"
   def version
-    say "ncd in FeldtRuby version #{FeldtRuby::VERSION} built #{FeldtRuby::GemBuildDate}"
+    say "#{COMMAND_NAME} in FeldtRuby version #{FeldtRuby::VERSION} built #{FeldtRuby::GemBuildDate}"
   end
 
   desc "compressors", "list available compressors"
@@ -83,18 +84,18 @@ class NcdCommand < Thor
     ncd.compare_compressors filename
   end
 
-  desc "dir DIR", "Calculated ncd between files in DIR"
-  method_option :compressor, :type => :string, :desc => "set the compressor to use (of ones from compressors above, default is xv)", :default => "xv"
+  desc "matrix DIR", "Calculate ncd matrix between files in DIR"
+  method_option :compressor, :type => :string, :desc => "set the compressor to use (of ones from compressors above, default is xz)", :default => "xz"
   method_option :sample, :type => :numeric, :desc => "sample N of the files in directory (use all files if this flag is not specified)", :default => nil
   method_option :header, :type => :boolean, :desc => "include a header line in output file (default is NOT to include it)", :default => false
   method_option :strippaths, :type => :boolean, :desc => "strip away path and list only file names in output", :default => true
   method_option :output, :type => :string, :desc => "specify the output file name and/or path", :default => "ncd_matrix.csv"
   method_option :separator, :type => :string, :desc => "value separator in csv file", :default => ","
   # method_option :merge, :type => :boolean, :desc => 'merge files that have the same prefix ("jss" is shared prefix for files "jss_1" and "jss_2" but not for "js_1")'
-  def dir(directory)
+  def matrix(directory)
 
-    if File.exist?(out_filename)
-      say "ERROR: A file with the name #{out_filename} already exist. Terminating."
+    if File.exist?(options[:output])
+      say "ERROR: A file with the name #{options[:output]} already exist. Terminating."
       exit(-1)
     end
 
