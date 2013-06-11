@@ -51,3 +51,4 @@ pkg
 related/*
 profiling/*
 Gemfile.lock
+.ncd_file_cache
