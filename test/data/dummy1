@@ -1,0 +1,21 @@
+total 64
+drwxr-xr-x  20 feldt  staff   680 11 Jun 15:28 .
+drwxr-xr-x  26 feldt  staff   884 11 Jun 10:58 ..
+drwxr-xr-x  15 feldt  staff   510 11 Jun 14:52 .git
+-rw-r--r--   1 feldt  staff   867 11 Apr 16:01 .gitignore
+-rw-r--r--   1 feldt  staff    94 23 Dec 16:51 Gemfile
+-rw-r--r--   1 feldt  staff   364 11 Apr 16:29 Gemfile.lock
+-rw-r--r--   1 feldt  staff   118 21 Dec 14:39 History.txt
+drwxr-xr-x   3 feldt  staff   102  9 Feb 16:32 R
+-rw-r--r--   1 feldt  staff  2446 22 Feb 20:24 README.md
+-rw-r--r--   1 feldt  staff  2367 11 Apr 10:33 Rakefile
+-rw-r--r--   1 feldt  staff   514 20 Dec 16:16 TODO
+drwxr-xr-x   3 feldt  staff   102 11 Jun 15:08 bin
+-rw-r--r--   1 feldt  staff  1024  5 Apr 16:42 feldtruby.gemspec
+drwxr-xr-x   4 feldt  staff   136 20 Dec 16:16 lib
+drwxr-xr-x   3 feldt  staff   102  5 Apr 15:23 old
+drwxr-xr-x   8 feldt  staff   272 22 Apr 18:21 pkg
+drwxr-xr-x  18 feldt  staff   612 18 Apr 17:01 profiling
+drwxr-xr-x   5 feldt  staff   170  2 Mar 00:12 related
+drwxr-xr-x   8 feldt  staff   272 19 Apr 16:09 spikes
+drwxr-xr-x  42 feldt  staff  1428 11 Jun 15:28 test
