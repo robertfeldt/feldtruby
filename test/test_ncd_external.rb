@@ -25,4 +25,10 @@ describe 'NCDExternal' do
       m[file].keys.sort.must_equal DummyFiles.sort
     end
   end
+
+  it 'can save an ncd matrix to file' do
+    FeldtRuby::NCDExternal.ncd_of_files_in_dirs(DataDir, DataDir, "temp.csv")
+    File.exist?("temp.csv").must_equal true
+    File.delete "temp.csv"
+  end
 end

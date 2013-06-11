@@ -250,7 +250,7 @@ class NCDExternal
   
   # Main method that finds the files and then calculates the ncd values and outputs to a file.
   def self.ncd_of_files_in_dirs(dir1, dir2, matrixFilename = "dist_matrix.csv", separator = ",", compressor = "gzip", csvHeader = false, stripPaths = false, numFilesToSample = nil)
-    ncd = NCD.new(compressor)
+    ncd = self.new(compressor)
     files1 = Dir[dir1 + "/*"]
     files2 = Dir[dir2 + "/*"]
     if numFilesToSample
@@ -261,7 +261,7 @@ class NCDExternal
         files2 = files2.sort_by {rand()}.take(numFilesToSample)
       end
     end
-    ncd_matrix = ncd.ncd_matrix_for_files(ncd, files1, files2)
+    ncd_matrix = ncd.ncd_matrix_for_files(files1, files2)
     File.open(matrixFilename, "w") do |fh|
       if csvHeader == true
         if stripPaths
