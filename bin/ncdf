@@ -1,0 +1,109 @@
+#!/usr/bin/env ruby
+# Calculate an NCD distance matrix (can be used by Cilibrasi's maketree command for clustering) for a set of files
+#
+# Copyright (c) 2011-2013 Robert Feldt, robert.feldt@gmail.com
+#
+require 'rubygems'
+require 'thor'
+require 'fileutils'
+require 'feldtruby/statistics/distance/ncd_external'
+require 'stringio'
+require 'pp'
+
+###############################################################################
+# CONSTANTS
+###############################################################################
+SourceRoot = File.dirname(File.expand_path(__FILE__)).split("/")[0...-1].join("/")
+
+# Get the name of the command form the name of this file minus the rb file ending:
+COMMAND_NAME = File.basename(__FILE__, ".rb")
+
+# Cache data for files are saved in a file with the name:
+NCDCacheFileName = ".ncd_cache"
+
+# Default is to output the ncd values in a comma-separated values file named:
+DefaultOutputFilename = "ncd_matrix.csv"
+
+# Path to this script
+PathToScript = File.dirname(__FILE__)
+
+# Path to gexf.rb script
+#GEXFScriptPath = File.join(PathToScript, "gexf.rb")
+
+# True if gexf.rb script is available
+#GEXFScriptAvailable = File.exist?(GEXFScriptPath)
+
+###############################################################################
+# Code
+###############################################################################
+
+class NcdCommand < Thor
+
+  include Thor::Actions
+
+  def self.source_root
+    SourceRoot
+  end
+
+  desc "version", "Print the current version of swagr"
+  def version
+    say "ncd in FeldtRuby version #{FeldtRuby::VERSION} built #{FeldtRuby::GemBuildDate}"
+  end
+
+  desc "compressors", "list available compressors"
+  def compressors
+    compressors = FeldtRuby::NCDExternal.available_compressors
+    if compressors.length > 0
+      say "Available compressors: #{compressors.sort.join(' ')}"
+    else
+      say "NO compressor available!!!!"
+    end
+  end
+
+  desc "clist", "List contents of cache"
+  def calist
+    ph = PermanentHash.new(NCDCacheFileName)
+    say "Contents of file cache:"
+    pp(ph.hash)
+  end
+
+  desc "caclear", "Clear the cache"
+  def caclear
+    ph = PermanentHash.new(NCDCacheFileName)
+    size = ph.length
+    ph.clear
+    say "Cache has been cleared from #{size} file entries."
+    invoke :calist
+  end
+
+  desc "compare filename", "Compare available compressors on compressing a file"
+  method_option :compressor, :type => :string, :desc => "set the compressor to use (of ones from compressors above, default is xv)", :default => "xv"
+  def compare(filename)
+    ncd = FeldtRuby::NCDExternal.new options[:compressor]
+    ncd.compare_compressors filename
+  end
+
+  method_option :compressor, :type => :string, :desc => "set the compressor to use (of ones from compressors above, default is xv)", :default => "xv"
+  method_option :sample, :type => :integer, :desc => "sample N of the files in directory (use all files if this flag is not specified)", :default => nil
+  method_option :header, :type => :boolean, :desc => "include a header line in output file (default is NOT to include it)", :default => false
+  method_option :strippaths, :type => :boolean, :desc => "strip away path and list only file names in output", :default => true
+  method_option :output, :type => :string, :desc => "specify the output file name and/or path", :default => "ncd_matrix.csv"
+  method_option :separator, :type => :string, :desc => "value separator in csv file", :default => ","
+  # method_option :merge, :type => :boolean, :desc => 'merge files that have the same prefix ("jss" is shared prefix for files "jss_1" and "jss_2" but not for "js_1")'
+  def dir(directory)
+
+    if File.exist?(out_filename)
+      say "ERROR: A file with the name #{out_filename} already exist. Terminating."
+      exit(-1)
+    end
+
+    FeldtRuby::NCDExternal.ncd_of_files_in_dirs(directory, directory, 
+      options[:output], options[:separator], options[:compressor], 
+      options[:header], options[:strippaths], options[:sample])
+    say "Output written to file: #{options[:output]}"
+
+  end
+
+end
+
+NcdCommand.start()
