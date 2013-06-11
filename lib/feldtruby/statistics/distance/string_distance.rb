@@ -1,3 +1,4 @@
+require 'feldtruby'
 require 'zlib'
 
 module FeldtRuby::Statistics
