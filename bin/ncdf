@@ -20,7 +20,7 @@ SourceRoot = File.dirname(File.expand_path(__FILE__)).split("/")[0...-1].join("/
 COMMAND_NAME = File.basename(__FILE__, ".rb")
 
 # Cache data for files are saved in a file with the name:
-NCDCacheFileName = ".ncd_cache"
+NCDCacheFileName = "./.ncd_file_cache"
 
 # Default is to output the ncd values in a comma-separated values file named:
 DefaultOutputFilename = "ncd_matrix.csv"
@@ -78,9 +78,9 @@ class NcdCommand < Thor
   end
 
   desc "compare filename", "Compare available compressors on compressing a file"
-  method_option :compressor, :type => :string, :desc => "set the compressor to use (of ones from compressors above, default is xv)", :default => "xv"
+  method_option :compressor, :type => :string, :desc => "set the compressor to use (of ones from compressors above, default is xz)", :default => "xz"
   def compare(filename)
-    ncd = FeldtRuby::NCDExternal.new options[:compressor]
+    ncd = FeldtRuby::NCDExternal.new options[:compressor], NCDCacheFileName, true
     ncd.compare_compressors filename
   end
 
