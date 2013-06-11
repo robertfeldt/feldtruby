@@ -62,14 +62,14 @@ class NcdCommand < Thor
 
   desc "clist", "List contents of cache"
   def calist
-    ph = PermanentHash.new(NCDCacheFileName)
+    ph = FeldtRuby::PermanentHash.new(NCDCacheFileName)
     say "Contents of file cache:"
     pp(ph.hash)
   end
 
   desc "caclear", "Clear the cache"
   def caclear
-    ph = PermanentHash.new(NCDCacheFileName)
+    ph = FeldtRuby::PermanentHash.new(NCDCacheFileName)
     size = ph.length
     ph.clear
     say "Cache has been cleared from #{size} file entries."
@@ -83,8 +83,9 @@ class NcdCommand < Thor
     ncd.compare_compressors filename
   end
 
+  desc "dir DIR", "Calculated ncd between files in DIR"
   method_option :compressor, :type => :string, :desc => "set the compressor to use (of ones from compressors above, default is xv)", :default => "xv"
-  method_option :sample, :type => :integer, :desc => "sample N of the files in directory (use all files if this flag is not specified)", :default => nil
+  method_option :sample, :type => :numeric, :desc => "sample N of the files in directory (use all files if this flag is not specified)", :default => nil
   method_option :header, :type => :boolean, :desc => "include a header line in output file (default is NOT to include it)", :default => false
   method_option :strippaths, :type => :boolean, :desc => "strip away path and list only file names in output", :default => true
   method_option :output, :type => :string, :desc => "specify the output file name and/or path", :default => "ncd_matrix.csv"
