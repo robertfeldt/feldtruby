@@ -47,6 +47,19 @@ class DistanceMatrix
     @distances[name1][name2] = @distance_func.distance(@nodes[name1], @nodes[name2])
   end
 
+  # Yield each distance sending the names and the distance along to the block.
+  def each_distance
+    ns = names
+    max_index = ns.length - 1
+    0.upto(max_index-1) do |i|
+      name1 = ns[i]
+      (i+1).upto(max_index) do |j|
+        name2 = ns[j]
+        yield name1, name2, distance(name1, name2) 
+      end
+    end
+  end
+
   # Output a distance matrix in the text format accepted by the libqsearch
   # library by Rudi Cilibrasi.
   def to_libqsearch_text_distance_matrix
