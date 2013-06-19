@@ -15,4 +15,8 @@ def euclidean_distance(o1, o2)
   (@euclidean_distance ||= EuclideanDistance.new).calc(o1, o2)
 end
 
+def self.euclidean_distance(o1, o2)
+  (@euclidean_distance ||= EuclideanDistance.new).calc(o1, o2)
+end
+
 end
