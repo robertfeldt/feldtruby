@@ -152,11 +152,21 @@ class HashFile
       mid = len / 2
       split_value = (sorted[mid-1][1] + sorted[mid][1]) / 2.0
       half1, half2 = sorted[0, mid], sorted[mid, len - mid]
-      return Page.new(@options, low_hash_value, split_value, half1), Page.new(@options, split_value, high_hash_value, half2)
+
+      # Now keep half of the points in this page and create a new page for 
+      # the other half.
+      @points = half1
+      old_high_hash_value = self.high_hash_value
+      self.high_hash_value = split_value
+      return self, Page.new(@options, split_value, old_high_hash_value, half2)
     end
 
     def add_object_with_hash(object, hashvalue, vector)
       @points << [object, hashvalue, vector]
+    end
+
+    def delete_object_with_hash(object, hashvalue, vector)
+      @points.delete [object, hashvalue, vector]
     end
   end
 
@@ -196,10 +206,25 @@ class HashFile
     end
   end
 
+  include Enumerable
+
+  # Enumerate only the objects.
+  def each
+    @children.each do |child|
+      child.each_object_with_vector {|o, v| yield(o)}
+    end    
+  end
+
+  def points
+    all = []
+    each_object_with_vector {|p| all << p}
+    all
+  end
+
   # Add an object to the hashfile. Objects are indexed based on a unique
   # vector which is attached to it.
   def add(object)
-    add_object_with_hash object, object_to_vector(object)
+    add_object_with_vector object, object_to_vector(object)
   end
 
   def add_object_with_hash(object, hashvalue, vector)
@@ -208,8 +233,10 @@ class HashFile
   end
 
   def add_object_with_vector(object, vector)
-    hashvalue = hash(vector)
+    hashvalue = @hash_function.hash(vector)
+
     child, index = find_child(hashvalue)
+
     if child.full?
       if child.cover_single_hash_value?
 
@@ -227,7 +254,7 @@ class HashFile
 
         # Child page is full but covers more than single value so we split it 
         # and insert the new pages where the previous one was => keeps children 
-        # sorted.
+        # sorted based on their hash value ranges.
         @children[index, 1] = child.split
 
         # Now insert the new object where it belongs
@@ -260,6 +287,21 @@ class HashFile
   # for more complex schemes.
   def object_to_vector(o)
     @options[:ObjectToVector].call(o)
+  end
+
+  def delete(object)
+    delete_object_with_vector object, object_to_vector(object)
+  end
+
+  def delete_object_with_hash(objedct, hashvalue, vector)
+    # We always use our own hash function if we are a HashFile so disregard the one sent in.
+    delete_object_with_vector object, vector
+  end
+
+  def delete_object_with_vector(object, vector)
+    hashvalue = @hash_function.hash(vector)
+    child, index = find_child(hashvalue)
+    child.delete_object_with_hash object, hashvalue, vector
   end
 end
 

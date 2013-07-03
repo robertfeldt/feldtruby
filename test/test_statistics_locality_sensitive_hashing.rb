@@ -161,13 +161,49 @@ describe HashFile do
     end
   end
 
-#  it "accepts data points and can later enumerate them" do
-#    hf = HashFile.new
-#    hf.must_be_instance_of HashFile
-#
-#    dims = 1 + rand(200)
-#    vectors = rand_vectors(1e2, dims)
-#    vectors.each {|v| hf.add(v)}
-#    hf.all_points.length.must_equal vectors.length
-#  end
+  it "accepts data points and can later enumerate them" do
+    dims = 1 + rand(200)
+
+    hf = HashFile.new( {:NumDimensions => dims} )
+
+    hf.must_be_instance_of HashFile
+
+    vectors = rand_vectors(2000, dims)
+    vectors.each {|v| hf.add(v)}
+
+    hf.points.length.must_equal vectors.length
+  end
+
+  it "can delete objects and then they are not found" do
+    dims = 1 + rand(200)
+
+    hf = HashFile.new( {:NumDimensions => dims} )
+
+    vectors = rand_vectors 3, dims
+    
+    hf.add(vectors[0])
+    hf.add(vectors[1])
+    hf.add(vectors[2])
+
+    hf.include?(vectors[0]).must_equal true
+    hf.include?(vectors[1]).must_equal true
+    hf.include?(vectors[2]).must_equal true
+
+    hf.delete(vectors[0])
+    hf.include?(vectors[0]).must_equal false
+    hf.include?(vectors[1]).must_equal true
+    hf.include?(vectors[2]).must_equal true
+
+    hf.add(vectors[0])
+    hf.delete(vectors[1])
+    hf.delete(vectors[2])
+    hf.include?(vectors[0]).must_equal true
+    hf.include?(vectors[1]).must_equal false
+    hf.include?(vectors[2]).must_equal false
+
+    hf.add(vectors[2])
+    hf.include?(vectors[0]).must_equal true
+    hf.include?(vectors[1]).must_equal false
+    hf.include?(vectors[2]).must_equal true
+  end
 end
