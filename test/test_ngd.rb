@@ -7,6 +7,33 @@ describe 'Number of hits in a Google search' do
     rfhits.must_be :<, 4e4
     rfhits.must_be :>, 1e4
   end
+
+  it "gives roughly the right number for a search for nintendo as we got 2013-09-16 12:26 (259,000,000)" do
+    rfhits = FeldtRuby.num_google_hits_for_search_terms("nintendo")
+    rfhits.class.must_equal Fixnum
+    rfhits.must_be :<, 300000000
+    rfhits.must_be :>, 200000000
+  end
+end
+
+describe "Number of hits going through a cache" do
+  it "gives roughly the same number of hits as the direct lookup method" do
+    direct_lookup = FeldtRuby.num_google_hits_for_search_terms("Robert Feldt")
+    cache = FeldtRuby::GoogleHitsCache.new
+    through_cache = cache.num_hits("Robert Feldt")
+    through_cache.class.must_equal Fixnum
+    through_cache.must_be :<, 2*direct_lookup
+    through_cache.must_be :>, 0.5*direct_lookup
+  end
+
+  it "gives roughly the same number of hits as the direct lookup method" do
+    direct_lookup = FeldtRuby.num_google_hits_for_search_terms("nintendo")
+    cache = FeldtRuby::GoogleHitsCache.new
+    through_cache = cache.num_hits("nintendo")
+    through_cache.class.must_equal Fixnum
+    through_cache.must_be :<, 2*direct_lookup
+    through_cache.must_be :>, 0.5*direct_lookup
+  end
 end
 
 describe "NGD - Normalized Google Distance" do
@@ -24,3 +51,6 @@ describe "NGD - Normalized Google Distance" do
     end
   end
 end
+
+# To test the contents of the cache
+# pp FeldtRuby::GoogleHitsCache.new.cache_contents_in_file
