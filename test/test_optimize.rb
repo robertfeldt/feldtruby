@@ -1,6 +1,6 @@
 require 'feldtruby/optimize'
 
-class TestOptimize < MiniTest::Unit::TestCase
+class TestOptimize < Minitest::Test
 	def test_rosenbrock_optimization_as_in_README
 		xbest, ybest = FeldtRuby::Optimize.optimize(0, 2, {:maxNumSteps => 10_000, 
 			:verbose => false}) {|x, y|

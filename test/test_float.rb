@@ -1,6 +1,6 @@
 require 'feldtruby/float'
 
-class TestFloat < MiniTest::Unit::TestCase
+class TestFloat < Minitest::Test
 	def test_round_to_decimals
 		assert_equal 1.2, 1.204.round_to_decimals(1)
 		assert_equal 1.20, 1.204.round_to_decimals(2)

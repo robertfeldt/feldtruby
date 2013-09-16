@@ -1,7 +1,7 @@
 require 'helper'
 require 'feldtruby/array/basic_stats'
 
-class TestArrayBasicStats < MiniTest::Unit::TestCase
+class TestArrayBasicStats < Minitest::Test
 	def test_sum_normal
 		assert_equal 3, [1,2].sum
 		assert_equal 6, [1,2,3].sum

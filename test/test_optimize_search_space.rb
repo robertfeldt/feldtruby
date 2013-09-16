@@ -154,7 +154,7 @@ describe "SearchSpace.new_from_min_max_per_variable" do
 	end
 end
 
-class TestSearchSpace < MiniTest::Unit::TestCase
+class TestSearchSpace < Minitest::Test
 	def setup
 		@s1 = FeldtRuby::Optimize::SearchSpace.new([-5], [5])	
 		@s2 = FeldtRuby::Optimize::SearchSpace.new([-1, -1], [1, 1])	

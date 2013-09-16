@@ -1,7 +1,7 @@
 require 'minitest/spec'
 require 'feldtruby/array'
 
-class TestFeldtRubyArray < MiniTest::Unit::TestCase
+class TestFeldtRubyArray < Minitest::Test
 	def test_distance_between_elements_normal_cases
 		assert_equal [1], 		[1, 2].distance_between_elements
 		assert_equal [1, 2], 	[1, 2, 4].distance_between_elements

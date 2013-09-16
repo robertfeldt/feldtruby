@@ -22,7 +22,7 @@ describe "Time#milli_seconds, micro_seconds and nano_seconds" do
 	end
 end
 
-class TestFeldtRubyTime < MiniTest::Unit::TestCase
+class TestFeldtRubyTime < Minitest::Test
 	def test_timestamp_short
 		str = Time.timestamp({:short => true})
 		assert_equal 15, str.length

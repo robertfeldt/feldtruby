@@ -1,7 +1,7 @@
 require 'feldtruby/optimize/random_search'
 require 'feldtruby/array/basic_stats'
 
-class TestRandomSearcher < MiniTest::Unit::TestCase
+class TestRandomSearcher < Minitest::Test
 	def setup
 		@s2 = FeldtRuby::Optimize::SearchSpace.new_symmetric(2, 1)
 		@s4 = FeldtRuby::Optimize::SearchSpace.new_symmetric(4, 1)

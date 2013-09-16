@@ -1,7 +1,7 @@
 require 'helper'
 require 'feldtruby/vector'
 
-class TestVectorBasicStats < MiniTest::Unit::TestCase
+class TestVectorBasicStats < Minitest::Test
 	def test_sum_normal
 		assert_equal 3, Vector[1,2].sum
 		assert_equal 6, Vector[1,2,3].sum
