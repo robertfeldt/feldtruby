@@ -35,24 +35,24 @@ class DSATree
 
     # Return all objects within queryRadius from queryObject.
     def range_search(queryObject, queryRadius, timestamp = Float::INFINITY)
-      puts "#{@object}, t = #{@time}: range_search(#{queryObject}, #{queryRadius}, #{timestamp})"
+      # puts "#{@object}, t = #{@time}: range_search(#{queryObject}, #{queryRadius}, #{timestamp})"
       da = distance(@object, queryObject)
-      puts "d1(#{@object.inspect}, #{queryObject.inspect}) = #{da}"
+      # puts "d1(#{@object.inspect}, #{queryObject.inspect}) = #{da}"
       if @time < timestamp && da <= @radius + queryRadius
         result = (da <= queryRadius && da != 0.0) ? [@object] : []
-        puts "result 1 = #{result.inspect}"
+        # puts "result 1 = #{result.inspect}"
         dmin = Float::INFINITY
         r2 = 2 * queryRadius
         @children.each_with_index do |b, i|
           db = distance(b.object, queryObject)
-          puts "d2(#{b.object.inspect}, #{queryObject.inspect}) = #{db}"
+          # puts "d2(#{b.object.inspect}, #{queryObject.inspect}) = #{db}"
           if db <= dmin + r2
             ts = timestamps_of_children_closer_than(i+1, db - r2, queryObject)
-            puts "ts = #{ts.inspect}"
+            # puts "ts = #{ts.inspect}"
             tprim = ([timestamp] + ts).min
-            puts tprim.inspect
+            # puts tprim.inspect
             result.concat b.range_search(queryObject, queryRadius, tprim)
-            puts "result 2 = #{result.inspect}"
+            # puts "result 2 = #{result.inspect}"
             dmin = db < dmin ? db : dmin
           end
         end
